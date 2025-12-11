@@ -2,7 +2,7 @@ import axios, { type AxiosError } from 'axios';
 import { refreshToken } from '@services/auth.service';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:9000/Sisbaq',
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 let accessToken: string | null = null;
