@@ -1,94 +1,89 @@
-export const MONTH_LABELS = [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
-] as const;
+export type Periodicity =
+  | 'MENSUAL'
+  | 'BIMESTRAL'
+  | 'TRIMESTRAL'
+  | 'CUATRIMESTRAL'
+  | 'SEMESTRAL'
+  | 'ANUAL';
 
-export const PERIODICITY_CONFIG = [
-    { value: 'MENSUAL', label: 'Mensual', periods: 12 },
-    { value: 'BIMESTRAL', label: 'Bimensual', periods: 6 },
-    { value: 'TRIMESTRAL', label: 'Trimestral', periods: 4 },
-    { value: 'CUATRIMESTRAL', label: 'Cuatrimestral', periods: 3 },
-    { value: 'SEMESTRAL', label: 'Semestral', periods: 2 },
-    { value: 'ANUAL', label: 'Anual', periods: 1 },
-] as const;
-
-export type Periodicity = (typeof PERIODICITY_CONFIG)[number]['value'];
-
-export const TREND_OPTIONS = [
-    { value: 'ASC', label: 'Ascendente' },
-    { value: 'DESC', label: 'Descendente' },
-] as const;
-
-export type Trend = (typeof TREND_OPTIONS)[number]['value'];
+export type Trend = 'ASC' | 'DESC';
 
 export interface IndicatorVariable {
-    id: string;
-    key: string;
-    label: string;
-    description?: string;
+  id: string;
+  key: string;
+  label: string;
+  description?: string;
 }
 
 export interface Indicator {
-    id: string;
-    name: string;
-    formula: string;
-    unit: string;
-    annualTarget: number;
-    periodicity: Periodicity;
-    trend: Trend;
-    realValue?: number;
-    estimatedValue?: number;
-    variables: IndicatorVariable[];
-    hasData?: boolean;
+  id: string;
+  name: string;
+  formula: string;
+  unit: string;
+  annualTarget: number;
+  periodicity: Periodicity;
+  trend: Trend;
+  realValue: number;
+  responsible?: string;
+  variables: IndicatorVariable[];
+  process?: string;
+  hasData?: boolean;
+  lastUpdate?: string;
+  userId?: number;
 }
 
-export interface PeriodRow {
-    index: number;
-    label: string;
-    meta: number;
-    values: Record<string, string>;
-    result?: number;
-    observation: string;
-    evidence: string;
+
+export interface PeriodicityOption {
+  value: Periodicity;
+  label: string;
+  periods: number;
 }
 
-export const createId = () =>
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-export const getPeriodConfig = (periodicity: Periodicity) =>
-    PERIODICITY_CONFIG.find((p) => p.value === periodicity)!;
+export const PERIODICITY_CONFIG: PeriodicityOption[] = [
+  { value: 'MENSUAL', label: 'Mensual', periods: 12 },
+  { value: 'BIMESTRAL', label: 'Bimestral', periods: 6 },
+  { value: 'TRIMESTRAL', label: 'Trimestral', periods: 4 },
+  { value: 'CUATRIMESTRAL', label: 'Cuatrimestral', periods: 3 },
+  { value: 'SEMESTRAL', label: 'Semestral', periods: 2 },
+  { value: 'ANUAL', label: 'Anual', periods: 1 },
+];
 
-export const getPeriodLabel = (periodicity: Periodicity, index: number) => {
-    switch (periodicity) {
-        case 'MENSUAL':
-            return MONTH_LABELS[index] ?? `Mes ${index + 1}`;
-        case 'BIMESTRAL':
-            return `Bimestre ${index + 1}`;
-        case 'TRIMESTRAL':
-            return `Trimestre ${index + 1}`;
-        case 'CUATRIMESTRAL':
-            return `Cuatrimestre ${index + 1}`;
-        case 'SEMESTRAL':
-            return `Semestre ${index + 1}`;
-        case 'ANUAL':
-        default:
-            return 'Año';
-    }
+
+
+export const TREND_OPTIONS = [
+  { value: 'ASC', label: 'Ascendente' },
+  { value: 'DESC', label: 'Descendente' },
+];
+
+
+
+export const createId = () => crypto.randomUUID();
+
+export const formatNumber = (value: number | string): string => {
+  const num = typeof value === 'string' ? Number(value) : value;
+  if (!Number.isFinite(num)) return String(value);
+  return num.toLocaleString('es-CO', { maximumFractionDigits: 2 });
 };
 
-export const formatNumber = (value?: number, decimals = 2) =>
-    typeof value === 'number' && Number.isFinite(value)
-        ? value.toFixed(decimals)
-        : '-';
+export const getPeriodConfig = (periodicity: Periodicity): PeriodicityOption => {
+  return (
+    PERIODICITY_CONFIG.find((p) => p.value === periodicity) ??
+    PERIODICITY_CONFIG[0]
+  );
+};
+
+
+export const getPeriodLabel = (periodicity: Periodicity): string => {
+  const config = PERIODICITY_CONFIG.find((p) => p.value === periodicity);
+  return config?.label ?? 'Mensual';
+};
+
+
+
+export interface PeriodRow {
+  id: string;
+  periodLabel: string;
+  value: number | null;
+  observation?: string;
+}

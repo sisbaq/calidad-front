@@ -153,7 +153,7 @@ const ALL_ROUTES: NavItem[] = [
     title: "Evaluación de desempeño",
     icon: <AssessmentIcon />,
     segment: "evaluacion",
-    rolesAllowed: [ROLES.GESTOR],
+    rolesAllowed: [ROLES.GESTOR,ROLES.ADMIN],
     children: [
       {
         segment: 'indicadores-por-desempeno',
