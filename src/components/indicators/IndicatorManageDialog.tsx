@@ -26,7 +26,7 @@ import { appColors } from '@/theme/colors';
 import type {
   Indicator,
   IndicatorVariable,
-  PeriodRow,
+  IndicatorPeriodRow,
 } from '../../types/indicators';
 import {
   PERIODICITY_CONFIG,
@@ -40,7 +40,7 @@ interface IndicatorManageDialogProps {
   open: boolean;
   indicator: Indicator | null;
   onClose: () => void;
-  onSave?: (rows: PeriodRow[]) => void;
+  onSave?: (rows: IndicatorPeriodRow[]) => void;
 }
 
 interface PreparedFormula {
@@ -79,7 +79,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
   onClose,
   onSave,
 }) => {
-  const [rows, setRows] = useState<PeriodRow[]>([]);
+  const [rows, setRows] = useState<IndicatorPeriodRow[]>([]);
 
   const preparedFormula = useMemo<PreparedFormula | null>(() => {
     if (!indicator) return null;
@@ -98,7 +98,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
 
     const vars = indicator.variables ?? [];
 
-    const initialRows: PeriodRow[] = Array.from(
+    const initialRows: IndicatorPeriodRow[] = Array.from(
       { length: periods },
       (_, index) => {
         const values: Record<string, string> = {};
@@ -108,7 +108,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
 
         return {
           index: index + 1,
-          label: getPeriodLabel(indicator.periodicity, index),
+         label: getPeriodLabel(indicator.periodicity)[index],
           meta: metaPerPeriod,
           values,
           result: undefined,
@@ -375,8 +375,9 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
                             }}
                           >
                             {compliance !== undefined
-                              ? `${formatNumber(compliance, 0)}%`
+                              ? `${formatNumber(Number(compliance.toFixed(0)))}%`
                               : '-'}
+
                           </Typography>
                         </TableCell>
                         <TableCell>

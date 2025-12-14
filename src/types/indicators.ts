@@ -15,6 +15,17 @@ export interface IndicatorVariable {
   description?: string;
 }
 
+export interface IndicatorPeriodRow {
+  index: number;
+  label: string;
+  meta: number;
+  values: Record<string, string>;
+  result?: number;
+  observation: string;
+  evidence: string;
+}
+
+
 export interface Indicator {
   id: string;
   name: string;

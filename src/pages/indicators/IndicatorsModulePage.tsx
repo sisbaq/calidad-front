@@ -1,11 +1,23 @@
-
 import React, { useState } from 'react';
-import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import { appColors } from '@/theme/colors';
 
-import type { Indicator, PeriodRow } from '../../types/indicators';
+import type {
+  Indicator,
+  PeriodRow,
+  IndicatorPeriodRow,
+} from '../../types/indicators';
+
 import { IndicatorForm } from '../../components/indicators/IndicatorForm';
 import { IndicatorManageDialog } from '../../components/indicators/IndicatorManageDialog';
 import { IndicatorViewModal } from '../../components/indicators/IndicatorViewModal';
@@ -37,8 +49,8 @@ export const IndicatorsModulePage: React.FC = () => {
       userId: 1,
       variables: [
         { id: 'v1', key: 'procesos_completados', label: 'Procesos completados en el período', description: 'Número de procesos finalizados satisfactoriamente' },
-        { id: 'v2', key: 'procesos_totales', label: 'Total de procesos', description: 'Número total de procesos iniciados' }
-      ]
+        { id: 'v2', key: 'procesos_totales', label: 'Total de procesos', description: 'Número total de procesos iniciados' },
+      ],
     },
     {
       id: '2',
@@ -56,8 +68,8 @@ export const IndicatorsModulePage: React.FC = () => {
       userId: 2,
       variables: [
         { id: 'v3', key: 'clientes_satisfechos', label: 'Clientes satisfechos', description: 'Clientes que calificaron con 4 o 5 estrellas' },
-        { id: 'v4', key: 'total_encuestas', label: 'Total de encuestas', description: 'Número total de encuestas respondidas' }
-      ]
+        { id: 'v4', key: 'total_encuestas', label: 'Total de encuestas', description: 'Número total de encuestas respondidas' },
+      ],
     },
     {
       id: '3',
@@ -75,8 +87,8 @@ export const IndicatorsModulePage: React.FC = () => {
       userId: 3,
       variables: [
         { id: 'v5', key: 'auditorias_aprobadas', label: 'Auditorías aprobadas', description: 'Auditorías sin hallazgos críticos' },
-        { id: 'v6', key: 'auditorias_realizadas', label: 'Auditorías realizadas', description: 'Total de auditorías ejecutadas' }
-      ]
+        { id: 'v6', key: 'auditorias_realizadas', label: 'Auditorías realizadas', description: 'Total de auditorías ejecutadas' },
+      ],
     },
     {
       id: '4',
@@ -94,8 +106,8 @@ export const IndicatorsModulePage: React.FC = () => {
       userId: 1,
       variables: [
         { id: 'v7', key: 'solicitudes_a_tiempo', label: 'Solicitudes atendidas a tiempo', description: 'Solicitudes resueltas dentro del SLA' },
-        { id: 'v8', key: 'total_solicitudes', label: 'Total de solicitudes', description: 'Todas las solicitudes recibidas' }
-      ]
+        { id: 'v8', key: 'total_solicitudes', label: 'Total de solicitudes', description: 'Todas las solicitudes recibidas' },
+      ],
     },
     {
       id: '5',
@@ -113,9 +125,9 @@ export const IndicatorsModulePage: React.FC = () => {
       userId: 4,
       variables: [
         { id: 'v9', key: 'empleados_capacitados', label: 'Empleados capacitados', description: 'Empleados que completaron al menos un curso' },
-        { id: 'v10', key: 'total_empleados', label: 'Total de empleados', description: 'Número total de empleados activos' }
-      ]
-    }
+        { id: 'v10', key: 'total_empleados', label: 'Total de empleados', description: 'Número total de empleados activos' },
+      ],
+    },
   ];
 
   const [indicators, setIndicators] = useState<Indicator[]>(mockIndicators);
@@ -138,7 +150,13 @@ export const IndicatorsModulePage: React.FC = () => {
 
   const handleCreateOrUpdate = (indicator: Indicator) => {
     if (editingIndicator) {
-      setIndicators((prev) => prev.map((it) => it.id === indicator.id ? { ...indicator, hasData: it.hasData, lastUpdate: it.lastUpdate } : it));
+      setIndicators((prev) =>
+        prev.map((it) =>
+          it.id === indicator.id
+            ? { ...indicator, hasData: it.hasData, lastUpdate: it.lastUpdate }
+            : it,
+        ),
+      );
     } else {
       const newIndicator: Indicator = {
         ...indicator,
@@ -167,8 +185,13 @@ export const IndicatorsModulePage: React.FC = () => {
   };
 
   const handleConfirmDelete = () => {
-    if (!indicatorToDelete) { setDeleteDialogOpen(false); return; }
-    setIndicators((prev) => prev.filter(i => i.id !== indicatorToDelete.id));
+    if (!indicatorToDelete) {
+      setDeleteDialogOpen(false);
+      return;
+    }
+    setIndicators((prev) =>
+      prev.filter((i) => i.id !== indicatorToDelete.id),
+    );
     setIndicatorToDelete(null);
     setDeleteDialogOpen(false);
   };
@@ -183,24 +206,54 @@ export const IndicatorsModulePage: React.FC = () => {
     setViewOpen(true);
   };
 
-  const handleSaveManage = (rows: PeriodRow[]) => {
+  // ✅ CORREGIDO
+  const handleSaveManage = (rows: IndicatorPeriodRow[]) => {
     void rows;
+
     if (!selectedIndicator) return;
+
+    // 🔁 Si luego necesitas enviar al backend:
+    const mappedRows: PeriodRow[] = rows.map((r) => ({
+      id: String(r.index),
+      periodLabel: r.label,
+      value: r.result ?? 0,
+    }));
+
+
+    void mappedRows;
+
     const nowIso = new Date().toISOString();
-    setIndicators((prev) => prev.map(i => i.id === selectedIndicator.id ? { ...i, hasData: true, lastUpdate: nowIso } : i));
+    setIndicators((prev) =>
+      prev.map((i) =>
+        i.id === selectedIndicator.id
+          ? { ...i, hasData: true, lastUpdate: nowIso }
+          : i,
+      ),
+    );
+
     setManageOpen(false);
     setSelectedIndicator(null);
   };
 
   const filteredIndicators = isAdmin
     ? indicators
-    : indicators.filter(ind => ind.userId === userId);
+    : indicators.filter((ind) => ind.userId === userId);
 
   return (
     <Box>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box
+        sx={{
+          mb: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: appColors.blue }}>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 700, color: appColors.blue }}
+          >
             Gestión de Indicadores
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -210,7 +263,6 @@ export const IndicatorsModulePage: React.FC = () => {
           </Typography>
         </Box>
 
-        {/* Botón "Nuevo indicador" solo visible para GESTOR */}
         {!isAdmin && (
           <Button
             variant="contained"
@@ -223,10 +275,12 @@ export const IndicatorsModulePage: React.FC = () => {
         )}
       </Box>
 
-      {/* Formulario solo visible para GESTOR */}
       {!isAdmin && formOpen && (
         <Box sx={{ mb: 3 }}>
-          <IndicatorForm onSubmit={handleCreateOrUpdate} initialIndicator={editingIndicator} />
+          <IndicatorForm
+            onSubmit={handleCreateOrUpdate}
+            initialIndicator={editingIndicator}
+          />
         </Box>
       )}
 
@@ -239,20 +293,39 @@ export const IndicatorsModulePage: React.FC = () => {
         onDelete={handleRequestDelete}
       />
 
-      {/* Manage modal for gestor */}
-      <IndicatorManageDialog open={manageOpen} indicator={selectedIndicator} onClose={() => setManageOpen(false)} onSave={handleSaveManage} />
+      <IndicatorManageDialog
+        open={manageOpen}
+        indicator={selectedIndicator}
+        onClose={() => setManageOpen(false)}
+        onSave={handleSaveManage}
+      />
 
-      {/* View modal for admin (read-only) */}
-      <IndicatorViewModal open={viewOpen} indicator={viewIndicator} onClose={() => setViewOpen(false)} />
+      <IndicatorViewModal
+        open={viewOpen}
+        indicator={viewIndicator}
+        onClose={() => setViewOpen(false)}
+      />
 
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
         <DialogTitle>Eliminar indicador</DialogTitle>
         <DialogContent>
-          <Typography>¿Estás seguro de eliminar <strong>{indicatorToDelete?.name}</strong>?</Typography>
+          <Typography>
+            ¿Estás seguro de eliminar{' '}
+            <strong>{indicatorToDelete?.name}</strong>?
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">Eliminar</Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+          >
+            Eliminar
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
