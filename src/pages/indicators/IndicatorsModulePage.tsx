@@ -206,13 +206,13 @@ export const IndicatorsModulePage: React.FC = () => {
     setViewOpen(true);
   };
 
-  // ✅ CORREGIDO
+  
   const handleSaveManage = (rows: IndicatorPeriodRow[]) => {
     void rows;
 
     if (!selectedIndicator) return;
 
-    // 🔁 Si luego necesitas enviar al backend:
+    // 🔁 Si luego necesito enviar al backend:
     const mappedRows: PeriodRow[] = rows.map((r) => ({
       id: String(r.index),
       periodLabel: r.label,
