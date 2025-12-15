@@ -18,6 +18,8 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN pnpm run build
 
 FROM nginx:alpine AS production
