@@ -1,18 +1,28 @@
-import { useState } from "react";
-import { Box, Snackbar, Alert, ThemeProvider, createTheme } from "@mui/material";
+/*
+ This is the Context Matrix Upload Component for Administrators
+*/
+import { useState, useEffect } from "react";
+import {
+  Box,
+  Snackbar,
+  Alert,
+  ThemeProvider,
+  createTheme,
+  CircularProgress,
+} from "@mui/material";
 import type { AlertColor } from "@mui/material";
 import StakeholderMatrixUploadForm from "@components/contextOrganization/MatrixUploadForm";
 import StakeholderMatrixTable from "@components/contextOrganization/MatrixTable";
-
-type MatrixRow = {
-  id: string;
-  fecha: string; 
-  descripcion: string;
-  nombre: string;
-  size: number;
-  type?: string | null;
-  url: string;
-};
+import EditMatrixDialog from "@components/contextOrganization/EditMatrixDialog";
+import {
+  createContextMatrix,
+  getContextMatrixes,
+  getContextTypes,
+  deleteContextMatrix,
+  updateContextMatrix,
+} from "@services/organization-context.service";
+import type { ContextType, ContextMatrix } from "@/types/organization-context";
+import CenteredSpinner from "@components/common/CenteredSpinner";
 
 const theme = createTheme({
   palette: {
@@ -23,48 +33,181 @@ const theme = createTheme({
 });
 
 export default function StakeholderMatrixUploadPage() {
-  const [items, setItems] = useState<MatrixRow[]>([]);
-  const [snack, setSnack] = useState<{ open: boolean; msg: string; severity: AlertColor }>({
+  const [items, setItems] = useState<ContextMatrix[]>([]);
+  const [contextTypes, setContextTypes] = useState<ContextType[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [loadingTypes, setLoadingTypes] = useState<boolean>(true);
+  const [editDialog, setEditDialog] = useState<{
+    open: boolean;
+    matrix: ContextMatrix | null;
+  }>({ open: false, matrix: null });
+  const [snack, setSnack] = useState<{
+    open: boolean;
+    msg: string;
+    severity: AlertColor;
+  }>({
     open: false,
     msg: "",
     severity: "info",
   });
 
-  const handleUpload = ({ descripcion, file, resetForm }: { descripcion: string; file: File | null; resetForm: () => void; }) => {
+  useEffect(() => {
+    const fetchContextTypes = async () => {
+      try {
+        setLoadingTypes(true);
+        const types = await getContextTypes();
+        setContextTypes(types);
+      } catch (error) {
+        setSnack({
+          open: true,
+          msg: error instanceof Error ? error.message : "Error al cargar los tipos de contexto.",
+          severity: "error",
+        });
+      } finally {
+        setLoadingTypes(false);
+      }
+    };
+
+    fetchContextTypes();
+  }, []);
+
+  useEffect(() => {
+    const fetchMatrixes = async () => {
+      try {
+        setInitialLoading(true);
+        const matrices = await getContextMatrixes();
+        setItems(matrices);
+      } catch (error) {
+        setSnack({
+          open: true,
+          msg: error instanceof Error ? error.message : "Error al cargar las matrices.",
+          severity: "error",
+        });
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchMatrixes();
+  }, []);
+
+  const handleUpload = async ({
+    descripcion,
+    tipo,
+    file,
+    resetForm,
+  }: {
+    descripcion: string;
+    tipo: number;
+    file: File | null;
+    resetForm: () => void;
+  }) => {
     if (!descripcion?.trim()) {
-      setSnack({ open: true, msg: "La descripción es obligatoria.", severity: "warning" });
+      setSnack({
+        open: true,
+        msg: "La descripción es obligatoria.",
+        severity: "warning",
+      });
+      return;
+    }
+    if (!tipo) {
+      setSnack({
+        open: true,
+        msg: "Debes seleccionar un tipo de matriz.",
+        severity: "warning",
+      });
       return;
     }
     if (!file) {
-      setSnack({ open: true, msg: "Debes seleccionar un archivo.", severity: "warning" });
+      setSnack({
+        open: true,
+        msg: "Debes seleccionar un archivo.",
+        severity: "warning",
+      });
       return;
     }
 
-    const id = crypto.randomUUID();
-    const url = URL.createObjectURL(file);
+    try {
+      setLoading(true);
+      const result = await createContextMatrix({
+        description: descripcion.trim(),
+        type: tipo,
+        document: file,
+      });
 
-    const nuevo: MatrixRow = {
-      id,
-      fecha: new Date().toISOString(),
-      descripcion: descripcion.trim(),
-      nombre: file.name,
-      size: file.size,
-      type: file.type,
-      url,
-    };
-
-    setItems((prev) => [nuevo, ...prev]);
-    resetForm?.();
-    setSnack({ open: true, msg: "Matriz cargada correctamente.", severity: "success" });
+      if (result) {
+        const matrices = await getContextMatrixes();
+        setItems(matrices);
+        resetForm?.();
+        setSnack({
+          open: true,
+          msg: "Matriz cargada correctamente.",
+          severity: "success",
+        });
+      }
+    } catch (error) {
+      setSnack({
+        open: true,
+        msg: error instanceof Error ? error.message : "Error al cargar la matriz.",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setItems((prev) => {
-      const victim = prev.find((x) => x.id === id);
-      if (victim?.url) URL.revokeObjectURL(victim.url);
-      return prev.filter((x) => x.id !== id);
-    });
+  const handleEdit = (matrix: ContextMatrix) => {
+    setEditDialog({ open: true, matrix });
   };
+
+  const handleEditSave = async (
+    id: number,
+    description: string,
+    file: File | null,
+  ) => {
+    try {
+      const updated = await updateContextMatrix(id, description, file);
+
+      setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+
+      setEditDialog({ open: false, matrix: null });
+
+      setSnack({
+        open: true,
+        msg: "Matriz actualizada correctamente.",
+        severity: "success",
+      });
+    } catch (error) {
+      setSnack({
+        open: true,
+        msg: error instanceof Error ? error.message : "Error al actualizar la matriz.",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteContextMatrix(id);
+      setItems((prev) => prev.filter((x) => x.id !== id));
+      setSnack({
+        open: true,
+        msg: "Matriz eliminada correctamente.",
+        severity: "success",
+      });
+    } catch (error) {
+      setSnack({
+        open: true,
+        msg: error instanceof Error ? error.message : "Error al eliminar la matriz.",
+        severity: "error",
+      });
+    }
+  };
+
+  if (loadingTypes || initialLoading) {
+    return <CenteredSpinner />;
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -79,8 +222,26 @@ export default function StakeholderMatrixUploadPage() {
           gap: 2,
         }}
       >
-        <StakeholderMatrixUploadForm onUpload={handleUpload} />
-        <StakeholderMatrixTable rows={items} onDelete={handleDelete} />
+        <StakeholderMatrixUploadForm
+          onUpload={handleUpload}
+          disabled={loading}
+          contextTypes={contextTypes}
+        />
+
+        {loading && (
+          <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        <StakeholderMatrixTable rows={items} onDelete={handleDelete} onEdit={handleEdit} showActions={true} />
+
+        <EditMatrixDialog
+          open={editDialog.open}
+          matrix={editDialog.matrix}
+          onClose={() => setEditDialog({ open: false, matrix: null })}
+          onSave={handleEditSave}
+        />
 
         <Snackbar
           open={snack.open}

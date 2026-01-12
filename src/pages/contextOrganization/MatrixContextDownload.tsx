@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Card,
@@ -13,14 +13,15 @@ import {
   TableHead,
   TableRow,
   Button,
-  TablePagination,
+  Alert,
 } from "@mui/material";
-import type { LabelDisplayedRowsArgs } from "@mui/material/TablePagination";
 import SearchIcon from "@mui/icons-material/Search";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import { getCurrentContextMatrix } from "@services/organization-context.service";
+import type { ContextMatrix } from "@/types/organization-context";
+import CenteredSpinner from "@components/common/CenteredSpinner";
 
 const BLUE = "#142334";
-const h = React.createElement;
 
 type Row = {
   id: number;
@@ -28,197 +29,168 @@ type Row = {
   url: string | null;
 };
 
-const DATA: ReadonlyArray<Row> = [
-  { id: 1, nombre: "Matriz de contexto – 2025", url: "/files/matriz_contexto.xlsx" },
-];
+export default function MatrixContextDownload() {
+  const [data, setData] = useState<ContextMatrix | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState<string>("");
 
-export default function MatrixContextDownload(): React.ReactElement {
-  const [query, setQuery] = React.useState<string>("");
-  const [page, setPage] = React.useState<number>(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState<number>(10);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const context = await getCurrentContextMatrix();
+        setData(context);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Error al cargar los datos",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filtered = React.useMemo<ReadonlyArray<Row>>(() => {
-    const q = query.trim().toLowerCase();
-    return q ? DATA.filter((r) => r.nombre.toLowerCase().includes(q)) : DATA;
-  }, [query]);
+    fetchData();
+  }, []);
 
-  const paginated = React.useMemo<ReadonlyArray<Row>>(() => {
-    const start = page * rowsPerPage;
-    return filtered.slice(start, start + rowsPerPage);
-  }, [filtered, page, rowsPerPage]);
-
-  const handleChangePage = React.useCallback(
-    (_e: unknown, newPage: number) => setPage(newPage),
-    []
-  );
-
-  const handleChangeRowsPerPage = React.useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = parseInt(e.target.value, 10);
-      setRowsPerPage(Number.isNaN(value) ? 10 : value);
-      setPage(0);
-    },
-    []
-  );
-
-  const handleDownload = React.useCallback((row: Row) => {
-    if (!row.url) return;
+  const handleDownload = useCallback((url: string | null) => {
+    if (!url) return;
     const link = document.createElement("a");
-    link.href = row.url;
+    link.href = url;
     link.setAttribute("download", "matriz_contexto.xlsx");
     document.body.appendChild(link);
     link.click();
     link.remove();
   }, []);
 
-  return h(
-    Box,
-    { sx: { width: "100%", p: { xs: 2, md: 3 }, backgroundColor: "#fff" } },
+  if (loading) {
+    return <CenteredSpinner />;
+  }
 
-    // Título + subtítulo (idéntico a "partes interesadas")
-    h(
-      Typography,
-      { variant: "h5", sx: { fontWeight: 800, color: BLUE, mb: 0.5 } },
-      "Consulta y descarga la matriz de contexto"
-    ),
-    h(
-      Typography,
-      { variant: "body2", sx: { color: "#64748b", mb: 2 } },
-      "Visualiza y descarga los archivos disponibles"
-    ),
+  if (error) {
+    return (
+      <Box sx={{ width: "100%", p: { xs: 2, md: 3 } }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
 
-    // Buscador (mismos estilos)
-    h(TextField, {
-      placeholder: "Buscar",
-      value: query,
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value),
-      size: "medium",
-      sx: { mb: 2, maxWidth: 420 },
-      InputProps: {
-        startAdornment: h(InputAdornment, { position: "start" }, h(SearchIcon, { sx: { color: "#90a4ae" } })),
-      },
-    }),
+  const row: Row | null = data
+    ? {
+        id: data.id,
+        nombre: data.description,
+        url: data.document,
+      }
+    : null;
 
-    // Card con tabla y paginación (mismo patrón visual)
-    h(
-      Card,
-      { sx: { width: "100%", borderRadius: 3, boxShadow: 3 } },
-      h(
-        CardContent,
-        { sx: { p: { xs: 2, md: 3 } } },
-        h(
-          TableContainer,
-          {
-            sx: {
+  const matchesQuery = row
+    ? query.trim() === "" ||
+      row.nombre.toLowerCase().includes(query.trim().toLowerCase())
+    : false;
+
+  const showRow = row && matchesQuery;
+
+  return (
+    <Box sx={{ width: "100%", p: { xs: 2, md: 3 }, backgroundColor: "#fff" }}>
+      <Typography variant="h5" sx={{ fontWeight: 800, color: BLUE, mb: 0.5 }}>
+        Consulta y descarga la matriz de contexto
+      </Typography>
+      <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
+        Visualiza y descarga los archivos disponibles
+      </Typography>
+
+      <TextField
+        placeholder="Buscar"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        size="medium"
+        sx={{ mb: 2, maxWidth: 420 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon sx={{ color: "#90a4ae" }} />
+            </InputAdornment>
+          ),
+        }}
+      />
+
+      <Card sx={{ width: "100%", borderRadius: 3, boxShadow: 3 }}>
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+          <TableContainer
+            sx={{
               border: "1px solid",
               borderColor: "#e5e7eb",
               borderRadius: 2,
               overflow: "hidden",
-            },
-          },
-          h(
-            Table,
-            null,
-            h(
-              TableHead,
-              null,
-              h(
-                TableRow,
-                null,
-                h(
-                  TableCell,
-                  {
-                    sx: {
+            }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell
+                    sx={{
                       fontWeight: 700,
                       backgroundColor: "#f8fafc",
                       color: BLUE,
-                    },
-                  },
-                  "Nombre"
-                ),
-                h(
-                  TableCell,
-                  {
-                    align: "right",
-                    sx: {
+                    }}
+                  >
+                    Nombre
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
                       fontWeight: 700,
                       backgroundColor: "#f8fafc",
                       color: BLUE,
                       width: 240,
-                    },
-                  },
-                  "Descargar matriz"
-                )
-              )
-            ),
-            h(
-              TableBody,
-              null,
-              ...(
-                paginated.length > 0
-                  ? paginated.map((row) =>
-                      h(
-                        TableRow,
-                        { key: row.id, hover: true },
-                        h(TableCell, { sx: { color: BLUE } }, row.nombre),
-                        h(
-                          TableCell,
-                          { align: "right" },
-                          h(Button, {
-                            variant: "contained",
-                            onClick: () => handleDownload(row),
-                            startIcon: h(CloudDownloadIcon, {}),
-                            disabled: !row.url,
-                            sx: {
-                              textTransform: "none",
-                              fontWeight: 700,
-                              px: 2.2,
-                              borderRadius: 999,
-                              backgroundColor: !row.url ? "#E5E7EB" : BLUE,
-                              color: !row.url ? "#6B7280" : "#fff",
-                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                              "&:hover": { backgroundColor: !row.url ? "#E5E7EB" : "#0f1d2b" },
-                            },
-                            children: "Descargar matriz",
-                          })
-                        )
-                      )
-                    )
-                  : [
-                      h(
-                        TableRow,
-                        { key: "empty" },
-                        h(
-                          TableCell,
-                          { colSpan: 2, align: "center", sx: { py: 4 } },
-                          h(Typography, { color: "text.secondary" }, "No se encontraron resultados")
-                        )
-                      ),
-                    ]
-              )
-            )
-          ),
-
-          // Paginación integrada con mismo estilo
-          h(TablePagination, {
-            count: filtered.length,
-            page,
-            onPageChange: handleChangePage,
-            rowsPerPage,
-            onRowsPerPageChange: handleChangeRowsPerPage,
-            rowsPerPageOptions: [10, 25, 50],
-            labelRowsPerPage: "Filas por página",
-            labelDisplayedRows: (info: LabelDisplayedRowsArgs) =>
-              `${info.from}-${info.to} de ${info.count !== -1 ? info.count : `más de ${info.to}`}`,
-            sx: {
-              borderTop: "1px solid #e5e7eb",
-              ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows": {
-                color: "#64748b",
-              },
-            },
-          })
-        )
-      )
-    )
+                    }}
+                  >
+                    Descargar matriz
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {showRow ? (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ color: BLUE }}>{row.nombre}</TableCell>
+                    <TableCell align="right">
+                      <Button
+                        variant="contained"
+                        onClick={() => handleDownload(row.url)}
+                        startIcon={<CloudDownloadIcon />}
+                        disabled={!row.url}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 700,
+                          px: 2.2,
+                          borderRadius: 999,
+                          backgroundColor: !row.url ? "#E5E7EB" : BLUE,
+                          color: !row.url ? "#6B7280" : "#fff",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                          "&:hover": {
+                            backgroundColor: !row.url ? "#E5E7EB" : "#0f1d2b",
+                          },
+                        }}
+                      >
+                        Descargar matriz
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={2} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">
+                        No se encontraron resultados
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

@@ -14,6 +14,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import TruncatedTextModal from "@/components/common/TruncatedTextModal";
+import { downloadDocumentacionFile } from "@/services/file.service";
 
 import type { SigDocument, DocumentType, RevisionStatus } from "@/types/document";
 
@@ -395,14 +396,7 @@ export default function DocumentTable({
                                 disabled={!fileEnabled}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (!row.fileUrl) return;
-                                  const fullUrl = `${import.meta.env.VITE_API_URL}/${row.fileUrl}`;
-                                  const a = document.createElement("a");
-                                  a.href = fullUrl;
-                                  a.download = "";
-                                  a.target = "_blank";
-                                  a.rel = "noopener noreferrer";
-                                  a.click();
+                                  downloadDocumentacionFile(row.id).catch(console.error);
                                 }}
                                 sx={{
                                   border: "1px solid",

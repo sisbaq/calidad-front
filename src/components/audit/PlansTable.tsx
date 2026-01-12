@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 import type { AuditPlan, AuditReport } from '@/types/audit';
 import { BRAND_BLUE } from '@/constants/audit.constants';
+import { viewPlanAuditoriaFile, viewInformeAuditoriaFile } from '@/services/file.service';
 
 const fmtDate = (iso: string) => {
   try {
@@ -39,11 +40,6 @@ const fmtDate = (iso: string) => {
   } catch {
     return '—';
   }
-};
-
-const openFileExternally = (meta: { url?: string }) => {
-  if (!meta?.url) return;
-  window.open(meta.url, '_blank', 'noopener,noreferrer');
 };
 
 interface PlansTableProps {
@@ -177,7 +173,7 @@ export default function PlansTable({
                               size="small"
                               variant="outlined"
                               startIcon={<VisibilityIcon />}
-                              onClick={() => openFileExternally(p.fileMeta)}
+                              onClick={() => viewPlanAuditoriaFile(p.id).catch(console.error)}
                               sx={{
                                 borderColor: BRAND_BLUE,
                                 color: BRAND_BLUE,
@@ -265,7 +261,7 @@ export default function PlansTable({
                                               size="small"
                                               variant="outlined"
                                               startIcon={<VisibilityIcon />}
-                                              onClick={() => openFileExternally(r)}
+                                              onClick={() => viewInformeAuditoriaFile(r.id).catch(console.error)}
                                               sx={{
                                                 borderColor: BRAND_BLUE,
                                                 color: BRAND_BLUE,
@@ -338,5 +334,3 @@ export default function PlansTable({
     </>
   );
 }
-
-import { Fragment } from 'react';

@@ -18,6 +18,7 @@ import {
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import FollowupItem from './FollowupItem';
 import type { ImprovementPlanActivity, FileAttachment } from '@/types/improvement';
+import { viewPlanActividadMejoramientoFile } from '@/services/file.service';
 
 type Idx = 1 | 2 | 3 | 4;
 
@@ -49,16 +50,6 @@ type ActivityCloseHints = ImprovementPlanActivity & Partial<{
   status: string;
   closedAt: string | Date | null;
 }>;
-
-const guessMimeFromName = (name = ''): string => {
-  const n = name.toLowerCase();
-  if (n.endsWith('.pdf')) return 'application/pdf';
-  if (n.endsWith('.png')) return 'image/png';
-  if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
-  if (n.endsWith('.webp')) return 'image/webp';
-  if (n.endsWith('.gif')) return 'image/gif';
-  return 'application/octet-stream';
-};
 
 export default function FollowupsList({
   activity,
@@ -102,7 +93,7 @@ export default function FollowupsList({
     setVisibleCount(() => computeLastVisible());
   };
 
-  const openPreviewSmart = async (fileObj: FileAttachment | File | null) => {
+  const openPreviewSmart = async (fileObj: FileAttachment | File | null, seguimiento: Idx) => {
     if (!fileObj) return;
 
     if (fileObj instanceof File) {
@@ -113,30 +104,11 @@ export default function FollowupsList({
       return;
     }
 
-    const directUrl = (fileObj as FileAttachment).url || '';
-    if (!directUrl) return;
-
+    // For FileAttachment objects (files already on server), use the new service
     try {
-      const res = await fetch(directUrl, { method: 'GET' });
-      if (!res.ok) throw new Error('No se pudo obtener el archivo');
-
-      const serverType = res.headers.get('Content-Type') || '';
-      const mime =
-        serverType ||
-        guessMimeFromName(
-          (fileObj as FileAttachment).name ||
-          (fileObj as FileAttachment).filename ||
-          directUrl
-        );
-      const blob = await res.blob();
-
-      const objectUrl = URL.createObjectURL(new Blob([blob], { type: mime }));
-      const win = window.open(objectUrl, '_blank', 'noopener,noreferrer');
-      if (win) win.opener = null;
-
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-    } catch {
-      window.open(directUrl, '_blank', 'noopener,noreferrer');
+      await viewPlanActividadMejoramientoFile(activity.id, seguimiento);
+    } catch (error) {
+      console.error('Failed to view file:', error);
     }
   };
 
@@ -260,7 +232,7 @@ export default function FollowupsList({
                 onChange={onChangeSafe}
                 onPickFile={onPickFileSafe}
                 onClearFile={onClearFileSafe}
-                onPreviewFile={() => openPreviewSmart(fileObj)}
+                onPreviewFile={() => openPreviewSmart(fileObj, i)}
                 onSave={onSaveSafe}
                 onSend={onSendSafe}
                 onDelete={onDeleteSafe}

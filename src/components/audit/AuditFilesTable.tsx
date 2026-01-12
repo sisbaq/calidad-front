@@ -5,6 +5,7 @@ import {
 } from "@mui/material";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import type { AuditPlan } from "@/types/audit";
+import { downloadPlanAuditoriaFile, downloadInformeAuditoriaFile } from "@/services/file.service";
 
 const AZUL = "#0e2336";
 
@@ -39,38 +40,6 @@ function formatDate(iso: string): string {
         });
     } catch {
         return iso;
-    }
-}
-
-async function safeDownload(url: string, fallbackFilename?: string): Promise<void> {
-    try {
-        const res = await fetch(url, { credentials: "same-origin" });
-        if (!res.ok) throw new Error(`HTTP ${res.status} al descargar ${url}`);
-
-        const ct = (res.headers.get("content-type") || "").toLowerCase();
-        if (!ct.includes("application/pdf")) {
-            const text = await res.text();
-            console.error("Respuesta no-PDF (primeros 400 chars):", text.slice(0, 400));
-            throw new Error("El recurso no es un PDF (¿ruta incorrecta o 404?).");
-        }
-
-        const blob = await res.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = objectUrl;
-        a.download = fallbackFilename || (url.split("/").pop() || "archivo.pdf");
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(objectUrl);
-    } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error(e);
-        alert(
-            "No se pudo descargar el archivo.\n" +
-            "Verifica que la ruta exista en public/files y que el servidor del FRONTEND la sirva.\n\n" +
-            msg
-        );
     }
 }
 
@@ -132,7 +101,7 @@ export default function AuditFilesTable({
                                                             hasPlan &&
                                                             (onDescargarPlan
                                                                 ? onDescargarPlan(plan.fileMeta.url, plan.fileMeta.name)
-                                                                : safeDownload(plan.fileMeta.url, plan.fileMeta.name || "plan_auditoria.pdf"))
+                                                                : downloadPlanAuditoriaFile(plan.id).catch(console.error))
                                                         }
                                                         sx={{
                                                             textTransform: "none",
@@ -198,7 +167,7 @@ export default function AuditFilesTable({
                                                             hasPlan &&
                                                             (onDescargarPlan
                                                                 ? onDescargarPlan(plan.fileMeta.url, plan.fileMeta.name)
-                                                                : safeDownload(plan.fileMeta.url, plan.fileMeta.name || "plan_auditoria.pdf"))
+                                                                : downloadPlanAuditoriaFile(plan.id).catch(console.error))
                                                         }
                                                         sx={{
                                                             textTransform: "none",
@@ -230,7 +199,7 @@ export default function AuditFilesTable({
                                                             hasInforme &&
                                                             (onDescargarInforme
                                                                 ? onDescargarInforme(report.url, report.name)
-                                                                : safeDownload(report.url, report.name || "informe_auditoria.pdf"))
+                                                                : downloadInformeAuditoriaFile(report.id).catch(console.error))
                                                         }
                                                         sx={{
                                                             textTransform: "none",

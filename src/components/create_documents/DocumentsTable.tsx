@@ -16,6 +16,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
 import { appColors } from "@/theme/colors";
 import type { SigDocument } from "@/types/document";
+import { viewDocumentacionFile, downloadDocumentacionFile } from "@/services/file.service";
 
 function formatOnlyDate(value: string | Date | undefined | null): string {
   if (!value) return "";
@@ -197,9 +198,6 @@ export default function DocumentsTable(
                 let content: React.ReactNode;
 
                 if (col.kind === "actions") {
-                  const url = row.fileUrl ?? "";
-                  const fileName = url.split('/').pop() ?? "documento.pdf";
-
                   content = h(
                     "div",
                     {
@@ -215,7 +213,7 @@ export default function DocumentsTable(
                       {
                         type: "button",
                         title: "Ver",
-                        onClick: () => window.open(url, "_blank"),
+                        onClick: () => viewDocumentacionFile(row.id).catch(console.error),
                         style: {
                           border: "none",
                           background: "rgba(20,35,52,0.08)",
@@ -234,12 +232,7 @@ export default function DocumentsTable(
                       {
                         type: "button",
                         title: "Descargar",
-                        onClick: () => {
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = fileName;
-                          a.click();
-                        },
+                        onClick: () => downloadDocumentacionFile(row.id).catch(console.error),
                         style: {
                           border: "none",
                           background: "rgba(39,155,72,0.12)",

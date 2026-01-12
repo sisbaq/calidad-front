@@ -21,35 +21,33 @@ import {
   Card,
   CardHeader,
 } from "@mui/material";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
 import DownloadIcon from "@mui/icons-material/Download";
 import DeleteIcon from "@mui/icons-material/Delete";
 import InsertDriveFileRoundedIcon from "@mui/icons-material/InsertDriveFileRounded";
-
-type MatrixRow = {
-  id: string;
-  fecha: string;            // ISO date string
-  descripcion: string;
-  nombre: string;
-  size: number;             // bytes
-  type?: string | null;
-  url: string;
-};
+import type { ContextMatrix } from "@/types/organization-context";
+import { downloadContextoOrganizacionFile } from "@/services/file.service";
 
 type Props = {
-  rows?: MatrixRow[];
-  onDelete?: (id: string) => void;
+  rows?: ContextMatrix[];
+  onDelete?: (id: number) => void;
+  onEdit?: (matrix: ContextMatrix) => void;
+  showActions?: boolean;    // Controls whether to show ALL action buttons (download, edit, delete)
+  showDownloadOnly?: boolean;  // Show only download button (for read-only views)
+  title?: string;  // Custom title for the card header
 };
 
-function formatDateISOToLocal(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-CO", { year: "numeric", month: "2-digit", day: "2-digit" });
-}
-
-export default function StakeholderMatrixTable({ rows = [], onDelete }: Props) {
+export default function StakeholderMatrixTable({ 
+  rows = [], 
+  onDelete, 
+  onEdit, 
+  showActions = true,
+  showDownloadOnly = false,
+  title = "Matrices cargadas",
+}: Props) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [confirm, setConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [confirm, setConfirm] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
 
   const total = rows.length;
   const paged = useMemo(() => {
@@ -63,17 +61,11 @@ export default function StakeholderMatrixTable({ rows = [], onDelete }: Props) {
     setPage(0);
   };
 
-  const handleView = (row: MatrixRow) => window.open(row.url, "_blank", "noopener,noreferrer");
-  const handleDownload = (row: MatrixRow) => {
-    const a = document.createElement("a");
-    a.href = row.url;
-    a.download = row.nombre || "matriz";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  const handleDownload = (row: ContextMatrix) => {
+    downloadContextoOrganizacionFile(row.id).catch(console.error);
   };
 
-  const askDelete = (row: MatrixRow) => setConfirm({ open: true, id: row.id });
+  const askDelete = (row: ContextMatrix) => setConfirm({ open: true, id: row.id });
   const closeConfirm = () => setConfirm({ open: false, id: null });
   const doDelete = () => {
     if (confirm.id) onDelete?.(confirm.id);
@@ -99,7 +91,7 @@ export default function StakeholderMatrixTable({ rows = [], onDelete }: Props) {
           </Box>
         }
         titleTypographyProps={{ variant: "h6", sx: { fontWeight: 700, color: "primary.main" } }}
-        title="Matrices cargadas"
+        title={title}
       />
 
       <Box sx={{ p: 2 }}>
@@ -108,19 +100,22 @@ export default function StakeholderMatrixTable({ rows = [], onDelete }: Props) {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ width: 120, fontWeight: 600, color: "primary.main" }}>Fecha</TableCell>
+                  <TableCell sx={{ width: 120, fontWeight: 600, color: "primary.main" }}>Vigencia</TableCell>
+                  <TableCell sx={{ width: 200, fontWeight: 600, color: "primary.main" }}>Tipo</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>Descripción</TableCell>
-                  <TableCell sx={{ width: 280, fontWeight: 600, color: "primary.main" }}>Archivo</TableCell>
-                  <TableCell align="left" sx={{ width: 220, fontWeight: 600, color: "primary.main" }}>
-                    Acciones
-                  </TableCell>
+                  <TableCell sx={{ width: 200, fontWeight: 600, color: "primary.main" }}>Estado</TableCell>
+                  {(showActions || showDownloadOnly) && (
+                    <TableCell align="left" sx={{ width: showDownloadOnly ? 100 : 220, fontWeight: 600, color: "primary.main" }}>
+                      Acciones
+                    </TableCell>
+                  )}
                 </TableRow>
               </TableHead>
 
               <TableBody>
                 {paged.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={(showActions || showDownloadOnly) ? 5 : 4}>
                       <Typography variant="body2" sx={{ color: "text.secondary" }}>
                         Aún no se han cargado matrices.
                       </Typography>
@@ -129,47 +124,57 @@ export default function StakeholderMatrixTable({ rows = [], onDelete }: Props) {
                 ) : (
                   paged.map((row) => (
                     <TableRow key={row.id} hover>
-                      <TableCell>{formatDateISOToLocal(row.fecha)}</TableCell>
+                      <TableCell>{row.fiscalYear}</TableCell>
                       <TableCell>
-                        <Typography variant="body2">{row.descripcion}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {row.type.name || "N/A"}
+                        </Typography>
                       </TableCell>
                       <TableCell>
-                        <Stack spacing={0.5}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {row.nombre}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                            {row.type || "archivo"} · {(row.size / 1024).toFixed(1)} KB
-                          </Typography>
-                        </Stack>
+                        <Typography variant="body2">{row.description}</Typography>
                       </TableCell>
                       <TableCell>
-                        <Stack direction="row" spacing={1}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="success"
-                            startIcon={<VisibilityIcon />}
-                            onClick={() => handleView(row)}
-                            sx={{ borderColor: "success.main", "&:hover": { borderColor: "success.main" } }}
-                          >
-                            Ver
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                            startIcon={<DownloadIcon />}
-                            onClick={() => handleDownload(row)}
-                            sx={{ borderColor: "primary.main", "&:hover": { borderColor: "primary.main" } }}
-                          >
-                            Descargar
-                          </Button>
-                          <Button size="small" variant="outlined" color="error" onClick={() => askDelete(row)}>
-                            <DeleteIcon fontSize="small" />
-                          </Button>
-                        </Stack>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color={row.status ? 'success' : 'error'}
+                          sx={{ borderColor: row.status ? 'success.main': 'error.main' }}
+                        >
+                          {row.status ? 'Activa' : 'Inactiva'}
+                        </Button>
                       </TableCell>
+                      {(showActions || showDownloadOnly) && (
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="success"
+                              onClick={() => handleDownload(row)}
+                              sx={{ borderColor: "success.main", "&:hover": { borderColor: "success.main" } }}
+                            >
+                              <DownloadIcon fontSize="small"/>
+                            </Button>
+                            
+                            {!showDownloadOnly && (
+                              <>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="primary"
+                                  onClick={() => onEdit?.(row)}
+                                >
+                                  <EditIcon fontSize="small"/>
+                                </Button>
+                                
+                                <Button size="small" variant="outlined" color="error" onClick={() => askDelete(row)}>
+                                  <DeleteIcon fontSize="small" />
+                                </Button>
+                              </>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}

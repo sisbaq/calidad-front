@@ -91,12 +91,6 @@ export default function AuditFilesPage({
                     rows={filteredPlans}
                     rowsPerPageDefault={5}
                     rowsPerPageOptions={[5, 10, 25]}
-                    onDescargarPlan={(planUrl: string) => {
-                        window.location.href = planUrl;
-                    }}
-                    onDescargarInforme={(informeUrl: string) => {
-                        window.location.href = informeUrl;
-                    }}
                 />
             </Stack>
         </Container>
