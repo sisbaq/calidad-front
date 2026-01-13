@@ -164,7 +164,7 @@ export default function FindingsTableCollapse({
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{fmtDate(r.date)}</TableCell>
                       <TableCell>{r.findingType || '—'}</TableCell>
                       <TableCell><EstadoChip estado={r.status || 'Abierto'} /></TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{'-'}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{fmtDate(r.dueDate)}</TableCell>
 
                       <TableCell align="center">
                         <Tooltip title="Gestionar">
