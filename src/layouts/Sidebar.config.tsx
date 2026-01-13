@@ -13,7 +13,7 @@ import PolicyIcon from "@mui/icons-material/Policy";
 // import LogoutIcon from '@mui/icons-material/Logout';
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
-import QueryStatsIcon from "@mui/icons-material/QueryStats";
+// import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import ContentPasteSearchIcon from "@mui/icons-material/ContentPasteSearch";
 import FormatIndentIncreaseIcon from "@mui/icons-material/FormatIndentIncrease";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
@@ -30,7 +30,7 @@ import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 // import DesignServicesIcon from '@mui/icons-material/DesignServices';
 import FindInPageIcon from "@mui/icons-material/FindInPage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
-import ManageSearchIcon from "@mui/icons-material/ManageSearch";
+// import ManageSearchIcon from "@mui/icons-material/ManageSearch";
 import ApprovalIcon from "@mui/icons-material/Approval";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import UploadIcon from "@mui/icons-material/Upload";
@@ -192,12 +192,12 @@ const ALL_ROUTES: NavItem[] = [
         title: "Indicadores por desempeño",
         icon: <AnalyticsIcon />,
       },
-      {
-        segment: "revision-por-la-direccion",
-        title: "Revisión Dirección",
-        icon: <QueryStatsIcon />,
-        rolesAllowed: [ROLES.ADMIN],
-      },
+      // {
+      //   segment: "revision-por-la-direccion",
+      //   title: "Revisión Dirección",
+      //   icon: <QueryStatsIcon />,
+      //   rolesAllowed: [ROLES.ADMIN],
+      // },
     ],
   },
   {
@@ -222,12 +222,12 @@ const ALL_ROUTES: NavItem[] = [
         icon: <FindInPageIcon />,
         rolesAllowed: [ROLES.ADMIN, ROLES.GESTOR],
       },
-      {
-        segment: "administrar-planes-auditoria",
-        title: "Administrar planes",
-        icon: <ManageSearchIcon />,
-        rolesAllowed: [ROLES.ADMIN],
-      },
+      // {
+      //   segment: "administrar-planes-auditoria",
+      //   title: "Administrar planes",
+      //   icon: <ManageSearchIcon />,
+      //   rolesAllowed: [ROLES.ADMIN],
+      // },
       {
         segment: "no-conformidad",
         title: "Crear Hallazgos",
