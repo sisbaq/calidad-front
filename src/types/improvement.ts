@@ -113,6 +113,7 @@ export interface ApiImprovementPlan {
   };
   fkCreadoPor: ApiUser;
   fkActualizadoPor: ApiUser | null;
+  actividades?: ApiImprovementPlanActivity[];
 }
 
 export interface ApiImprovementPlanActivity {
@@ -155,6 +156,20 @@ export interface CreateImprovementPlanPayload {
   plmFechaFinal: string;
   plmEstadoPlan: number;
   fkIdHallazgo: number;
+  actividades?: NestedActivityPayload[] | string[];
+}
+
+// Type for nested activity creation (without fkPlanMejoramiento)
+export interface NestedActivityPayload {
+  actNomActividad: string;
+  actSeguimiento1: string;
+  actSeguimiento2: string;
+  actSeguimiento3: string;
+  actSeguimiento4: string;
+  actAnexoSeguimiento1: string;
+  actAnexoSeguimiento2: string;
+  actAnexoSeguimiento3: string;
+  actAnexoSeguimiento4: string;
 }
 
 export interface CreateActivityPayload {

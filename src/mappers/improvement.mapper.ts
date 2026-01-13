@@ -24,6 +24,13 @@ export const mapPlanStatus = (status: number): 'Abierto' | 'Cerrado' | 'Vencido'
 export const mapApiImprovementPlanToFrontend = (
   apiPlan: ApiImprovementPlan
 ): ImprovementPlan => {
+  // Handle nested activities if present
+  const activities = Array.isArray(apiPlan.actividades)
+    ? apiPlan.actividades
+        .filter((act) => act.actEstado === true)
+        .map(mapApiActivityToFrontend)
+    : undefined;
+
   return {
     id: apiPlan.plmId,
     findingId: apiPlan.fkIdHallazgo?.idHallazgo || 0,
@@ -33,6 +40,7 @@ export const mapApiImprovementPlanToFrontend = (
     status: apiPlan.plmEstadoPlan,
     createdAt: apiPlan.plmCreadoEn,
     updatedAt: apiPlan.plmActualizadoEl || undefined,
+    activities,
   };
 };
 

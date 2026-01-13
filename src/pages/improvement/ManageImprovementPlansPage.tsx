@@ -170,30 +170,30 @@ export default function ManageImprovementPlansPage({
       const rowId = updated.id ?? selected?.id;
       if (!rowId) return;
 
+      // Single request with nested activities
       const planPayload = {
         plmAnalisisDeCausa: updated.analisisCausa,
         plmFechaInicio: updated.fechaInicio,
         plmFechaFinal: updated.fechaFin,
         plmEstadoPlan: 1,
         fkIdHallazgo: Number(rowId),
+        actividades: updated.actividades.map((actividad) => ({
+          actNomActividad: actividad,
+          actSeguimiento1: '',
+          actSeguimiento2: '',
+          actSeguimiento3: '',
+          actSeguimiento4: '',
+          actAnexoSeguimiento1: '',
+          actAnexoSeguimiento2: '',
+          actAnexoSeguimiento3: '',
+          actAnexoSeguimiento4: '',
+        })),
       };
 
       const createdPlan = await createImprovementPlan(planPayload);
 
-      const activitiesPayload = updated.actividades.map((actividad) => ({
-        actNomActividad: actividad,
-        actSeguimiento1: '',
-        actSeguimiento2: '',
-        actSeguimiento3: '',
-        actSeguimiento4: '',
-        fkPlanMejoramiento: Number(createdPlan.id),
-        actAnexoSeguimiento1: '',
-        actAnexoSeguimiento2: '',
-        actAnexoSeguimiento3: '',
-        actAnexoSeguimiento4: '',
-      }));
-
-      const createdActivities = await createImprovementPlanActivities(activitiesPayload);
+      // Activities are already included in createdPlan.activities
+      const createdActivities = createdPlan.activities || [];
 
       setRows((prev) =>
         prev.map((r) => {
