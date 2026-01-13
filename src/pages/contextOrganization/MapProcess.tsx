@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Box,
-  Container,
   Card,
   CardContent,
   Typography,
@@ -20,7 +19,7 @@ export default function MapProcess() {
   const [expanded, setExpanded] = useState<boolean>(false);
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 2, md: 2.5 } }}>
+    <Box sx={{ width: "100%", px: { xs: 1, sm: 2, md: 4 }, py: 4 }}>
       <Typography
         variant="h5"
         sx={{
@@ -105,6 +104,6 @@ export default function MapProcess() {
           <TabsProcess collapsed={!expanded} />
         </Box>
       </Card>
-    </Container>
+    </Box>
   );
 }

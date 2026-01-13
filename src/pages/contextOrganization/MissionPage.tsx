@@ -93,10 +93,9 @@ export default function MissionVisionObjectives() {
   return (
     <Box
       sx={{
-        px: { xs: 2, md: 6 },
-        py: { xs: 3, md: 4 },
-        maxWidth: 1100,
-        mx: "auto",
+        width: "100%",
+        px: { xs: 1, sm: 2, md: 4 },
+        py: 4,
         display: "grid",
         rowGap: 3,
       }}

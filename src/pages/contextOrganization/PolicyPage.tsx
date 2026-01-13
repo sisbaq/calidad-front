@@ -86,7 +86,13 @@ export default function PoliticaObjetivos() {
   const [open, setOpen] = React.useState<boolean>(false);
 
   return (
-    <Box sx={{ maxWidth: 1060, mx: "auto", px: { xs: 2, md: 0 }, py: 2 }}>
+    <Box
+      sx={{
+        width: "100%",
+        px: { xs: 1, sm: 2, md: 4 },
+        py: 4,
+      }}
+    >
       <Stack spacing={3.5}>
         <BorderedCard
           color={AZUL}
