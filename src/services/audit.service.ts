@@ -3,8 +3,7 @@ import type { AuditPlan, AuditReport } from '@/types/audit';
 import {
   mapApiPlanToFrontend,
   mapFrontendPlanToApi,
-  mapApiReportToFrontend,
-  mapApiPlanWithReportsToFrontend
+  mapApiReportToFrontend
 } from '@/mappers/audit.mapper';
 import { PLAN_OPTIONS } from '@/constants/audit.constants';
 
@@ -57,29 +56,7 @@ export const getAuditPlans = async (): Promise<AuditPlan[]> => {
   }
 };
 
-export const getAuditReports = async (): Promise<AuditReport[]> => {
-  try {
-    const { data } = await axiosInstance.get('/get/informeAuditoria');
-    if (!Array.isArray(data)) return [];
-    // The backend returns the reports with the full plan object nested
-    // We need to map them to our frontend type
-    return data.map(mapApiReportToFrontend);
-  } catch (error) {
-    console.error('Failed to fetch audit reports:', error);
-    throw new Error('No se pudieron obtener los informes de auditoría.');
-  }
-};
 
-export const getAuditPlansWithReports = async (): Promise<AuditPlan[]> => {
-  try {
-    const { data } = await axiosInstance.get('/get/planesConInformes');
-    if (!Array.isArray(data)) return [];
-    return data.map(mapApiPlanWithReportsToFrontend);
-  } catch (error) {
-    console.error('Failed to fetch audit plans with reports:', error);
-    throw new Error('No se pudieron obtener los planes con sus informes de auditoría.');
-  }
-};
 
 interface CreateAuditPlanPayload {
   description: string;

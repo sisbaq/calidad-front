@@ -212,6 +212,7 @@ export default function PlansTable({
                           <Button
                             variant="contained"
                             startIcon={<UploadFileIcon />}
+                            disabled={p.reports.length !== 0}
                             sx={{ bgcolor: BRAND_BLUE, '&:hover': { bgcolor: BRAND_BLUE }, fontWeight: 600 }}
                             onClick={() => onReportAdd('create', p.id)}
                           >

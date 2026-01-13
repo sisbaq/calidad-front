@@ -18,6 +18,13 @@ export const mapApiPlanToFrontend = (apiPlan: any): AuditPlan => {
   const planOption = PLAN_OPTIONS.find(opt => opt.id === typeId);
   const fileName = apiPlan.linkPlanAuditoria?.split('/').pop() || 'Archivo sin nombre';
 
+  // Handle nested reports array
+  const reports = Array.isArray(apiPlan.informes)
+    ? apiPlan.informes
+        .filter((inf: any) => inf.estado === true)  // Extra safety filter
+        .map(mapApiReportToFrontend)
+    : [];
+
   return {
     id: apiPlan.idPlan || 'unknown',
     createdAt: apiPlan.creadoEl,
@@ -30,7 +37,7 @@ export const mapApiPlanToFrontend = (apiPlan: any): AuditPlan => {
       size: 0,
       type: '',
     },
-    reports: [],
+    reports,
   };
 };
 
@@ -62,36 +69,5 @@ export const mapApiReportToFrontend = (apiReport: any): AuditReport => {
     createdAt: apiReport.creadoEn,
     desc: apiReport.descripcion || 'Sin descripción',
     planId: apiReport.fkIdPlanAuditoria?.idPlan || undefined,
-  };
-};
-
-
-export const mapApiPlanWithReportsToFrontend = (apiPlan: any): AuditPlan => {
-  // Handle both { tpaId: 1 } and just 1 as the value
-  const typeId = typeof apiPlan.fkTipoDeAuditoria === 'object'
-    ? apiPlan.fkTipoDeAuditoria.tpaId
-    : apiPlan.fkTipoDeAuditoria;
-
-  const planOption = PLAN_OPTIONS.find(opt => opt.id === typeId);
-  const fileName = apiPlan.linkPlanAuditoria?.split('/').pop() || 'Archivo sin nombre';
-
-  // Map nested informes array if it exists
-  const reports = Array.isArray(apiPlan.informes)
-    ? apiPlan.informes.map(mapApiReportToFrontend)
-    : [];
-
-  return {
-    id: apiPlan.idPlan || 'unknown',
-    createdAt: apiPlan.creadoEl,
-    description: apiPlan.descripcion || 'Sin descripción',
-    planType: planOption?.value || 'riesgos', // Default to 'riesgos' if not found
-    planLabel: planOption?.label || 'No definido',
-    fileMeta: {
-      name: fileName,
-      url: apiPlan.linkPlanAuditoria || '',
-      size: 0,
-      type: '',
-    },
-    reports,
   };
 };

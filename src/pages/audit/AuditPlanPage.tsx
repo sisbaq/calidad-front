@@ -61,31 +61,9 @@ export default function AuditPlanPage() {
     const fetchPlansAndReports = async () => {
       setInitialLoading(true);
       try {
-        // Fetch both plans and reports in parallel
-        const [plans, reports] = await Promise.all([
-          auditService.getAuditPlans(),
-          auditService.getAuditReports(),
-        ]);
-
-        // Create a map of reports by their planId for efficient lookup
-        const reportsByPlanId = new Map<string | number, AuditReport>();
-        reports.forEach((report) => {
-          // The report object from the mapper now includes the planId
-          if (report?.planId) {
-            reportsByPlanId.set(report.planId, report);
-          }
-        });
-
-        // Map the reports to their corresponding plans
-        const plansWithReports = plans.map((plan) => {
-          const report = reportsByPlanId.get(plan.id);
-          return {
-            ...plan,
-            reports: report ? [report] : [],
-          };
-        });
-
-        setAllPlans(plansWithReports);
+        // Backend now includes reports in the plan response
+        const plans = await auditService.getAuditPlans();
+        setAllPlans(plans);
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Error al cargar los datos.';
         setSnack({ open: true, msg, sev: 'error' });

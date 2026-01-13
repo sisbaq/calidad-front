@@ -2,7 +2,7 @@ import * as React from "react";
 import { Box, Stack, Typography, Container } from "@mui/material";
 import SearchInput from "../../components/audit/SearchInput";
 import AuditFilesTable from "../../components/audit/AuditFilesTable";
-import { getAuditPlansWithReports } from "@services/audit.service"
+import { getAuditPlans } from "@services/audit.service"
 import type { AuditPlan } from "@/types/audit";
 
 export interface AuditFilesPageProps {
@@ -20,10 +20,10 @@ export default function AuditFilesPage({
     React.useEffect(() => {
         const fetchData = async () => {
             try {
-                const plans = await getAuditPlansWithReports();
+                const plans = await getAuditPlans();
                 setAuditPlans(plans);
             } catch (error) {
-                console.error("Error fetching audit plans with reports:", error);
+                console.error("Error fetching audit plans:", error);
             }
         };
 
