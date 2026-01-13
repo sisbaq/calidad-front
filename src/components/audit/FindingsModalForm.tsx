@@ -107,7 +107,7 @@ export default function FindingsModalForm({ open, onClose, onSave, initialData, 
           try {
             const reports = await getAuditReports();
             // Filter only active reports
-            const activeReports = reports.filter(report => report.url && report.url !== '');
+            const activeReports = reports.filter((report: AuditReport) => report.url && report.url !== '');
             setAuditReports(activeReports);
           } catch (error) {
             console.error('Error loading audit reports:', error);
