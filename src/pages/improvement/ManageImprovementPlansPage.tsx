@@ -235,10 +235,10 @@ export default function ManageImprovementPlansPage({
   }) => {
     try {
       const fieldMap: Record<string, string> = {
-        seguimientoI: 'actSeguimiento1',
-        seguimientoII: 'actSeguimiento2',
-        seguimientoIII: 'actSeguimiento3',
-        seguimientoIV: 'actSeguimiento4',
+        followup1: 'actSeguimiento1',
+        followup2: 'actSeguimiento2',
+        followup3: 'actSeguimiento3',
+        followup4: 'actSeguimiento4',
       };
 
       await updateImprovementPlanActivity(activityId, {
@@ -278,29 +278,29 @@ export default function ManageImprovementPlansPage({
   }) => {
     try {
       const sentFlag =
-        segKey === 'seguimientoI'
-          ? 'seguimientoIEnviado'
-          : segKey === 'seguimientoII'
-          ? 'seguimientoIIEnviado'
-          : segKey === 'seguimientoIII'
-          ? 'seguimientoIIIEnviado'
-          : 'seguimientoIVEnviado';
+        segKey === 'followup1'
+          ? 'followup1Sent'
+          : segKey === 'followup2'
+          ? 'followup2Sent'
+          : segKey === 'followup3'
+          ? 'followup3Sent'
+          : 'followup4Sent';
 
-      const seguimientoNum = (
-        segKey === 'seguimientoI'
+      const followupNum = (
+        segKey === 'followup1'
           ? 1
-          : segKey === 'seguimientoII'
+          : segKey === 'followup2'
           ? 2
-          : segKey === 'seguimientoIII'
+          : segKey === 'followup3'
           ? 3
           : 4
       ) as 1 | 2 | 3 | 4;
 
       const fieldMap: Record<string, string> = {
-        seguimientoI: 'actSeguimiento1',
-        seguimientoII: 'actSeguimiento2',
-        seguimientoIII: 'actSeguimiento3',
-        seguimientoIV: 'actSeguimiento4',
+        followup1: 'actSeguimiento1',
+        followup2: 'actSeguimiento2',
+        followup3: 'actSeguimiento3',
+        followup4: 'actSeguimiento4',
       };
 
       await updateImprovementPlanActivity(activityId, {
@@ -308,7 +308,7 @@ export default function ManageImprovementPlansPage({
       });
 
       if (file) {
-        await uploadActivityFollowupFile(activityId, seguimientoNum, file);
+        await uploadActivityFollowupFile(activityId, followupNum, file);
       }
 
       setRows((prev) =>

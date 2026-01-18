@@ -17,17 +17,16 @@ import {
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import FollowupItem from './FollowupItem';
-import type { ImprovementPlanActivity, FileAttachment } from '@/types/improvement';
+import type { ImprovementPlanActivity, FileAttachment, FollowupIndex } from '@/types/improvement';
 import { viewPlanActividadMejoramientoFile } from '@/services/file.service';
 
-type Idx = 1 | 2 | 3 | 4;
-
-const H2A: Record<Idx, keyof ImprovementPlanActivity> = {
-  1: 'seguimientoI',
-  2: 'seguimientoII',
-  3: 'seguimientoIII',
-  4: 'seguimientoIV',
+const H2A: Record<FollowupIndex, keyof ImprovementPlanActivity> = {
+  1: 'followup1',
+  2: 'followup2',
+  3: 'followup3',
+  4: 'followup4',
 } as const;
+
 
 interface FollowupsListProps {
   findingId: string | number;
@@ -45,12 +44,6 @@ interface FollowupsListProps {
 const BLUE = '#142334';
 const GREEN = '#279B48';
 
-type ActivityCloseHints = ImprovementPlanActivity & Partial<{
-  closed: boolean;
-  status: string;
-  closedAt: string | Date | null;
-}>;
-
 export default function FollowupsList({
   activity,
   draftSeg,
@@ -62,38 +55,37 @@ export default function FollowupsList({
   onSend,
   onDelete,
 }: FollowupsListProps) {
-  const a = activity as ActivityCloseHints;
-  const isClosed = a.closed === true || a.status === 'Cerrada' || Boolean(a.closedAt);
+  const isClosed = activity.closed === true;
 
   const [infoOpen, setInfoOpen] = useState(false);
   const showClosedInfo = () => setInfoOpen(true);
 
-  const hasContent = (i: Idx): boolean => {
+  const hasContent = (i: FollowupIndex): boolean => {
     const base = (activity[H2A[i]] as unknown as string) ?? '';
     const local = draftSeg?.[i] ?? base;
     return ((local as string)?.length ?? 0) > 0 || !!files?.[i];
   };
 
-  const computeLastVisible = (): Idx =>
-    (([1, 2, 3, 4] as Idx[]).reduce((acc, i) => (hasContent(i) ? i : acc), 1) as Idx) || 1;
+  const computeLastVisible = (): FollowupIndex =>
+    (([1, 2, 3, 4] as FollowupIndex[]).reduce((acc, i) => (hasContent(i) ? i : acc), 1) as FollowupIndex) || 1;
 
-  const [visibleCount, setVisibleCount] = useState<Idx>(() => computeLastVisible());
+  const [visibleCount, setVisibleCount] = useState<FollowupIndex>(() => computeLastVisible());
 
   const handleAdd = () => {
     if (isClosed) {
       showClosedInfo();
       return;
     }
-    setVisibleCount((v) => (v < 4 ? ((v + 1) as Idx) : v));
+    setVisibleCount((v) => (v < 4 ? ((v + 1) as FollowupIndex) : v));
   };
 
-   const deleteSeguimientoLocal = (i: Idx) => {
+  const deleteFollowupLocal = (i: FollowupIndex) => {
     setDraftSeg((s) => ({ ...s, [i]: '' }));
     setFiles((s) => ({ ...s, [i]: null }));
     setVisibleCount(() => computeLastVisible());
   };
 
-  const openPreviewSmart = async (fileObj: FileAttachment | File | null, seguimiento: Idx) => {
+  const openPreviewSmart = async (fileObj: FileAttachment | File | null, followupIdx: FollowupIndex) => {
     if (!fileObj) return;
 
     if (fileObj instanceof File) {
@@ -106,7 +98,7 @@ export default function FollowupsList({
 
     // For FileAttachment objects (files already on server), use the new service
     try {
-      await viewPlanActividadMejoramientoFile(activity.id, seguimiento);
+      await viewPlanActividadMejoramientoFile(activity.id, followupIdx);
     } catch (error) {
       console.error('Failed to view file:', error);
     }
@@ -186,7 +178,7 @@ export default function FollowupsList({
           </TableRow>
         </TableHead>
         <TableBody>
-          {([1, 2, 3, 4] as Idx[]).map((i) => {
+          {([1, 2, 3, 4] as FollowupIndex[]).map((i) => {
             const baseValue = (activity[H2A[i]] as unknown as string) ?? '';
             const value = draftSeg?.[i] ?? baseValue;
             const sent = !!sentFlags?.[i];
@@ -216,7 +208,7 @@ export default function FollowupsList({
             const onDeleteSafe = () => {
               if (isClosed) return showClosedInfo();
               if (sent) return;
-              deleteSeguimientoLocal(i);
+              deleteFollowupLocal(i);
               onDelete?.(i);
             };
 
@@ -229,6 +221,7 @@ export default function FollowupsList({
                 baseValue={baseValue}
                 sent={sent}
                 fileObj={fileObj}
+                isClosed={isClosed}
                 onChange={onChangeSafe}
                 onPickFile={onPickFileSafe}
                 onClearFile={onClearFileSafe}

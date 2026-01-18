@@ -83,9 +83,9 @@ export default function ActivitiesPanel({
 
   // modal de observaciones
   const [obsOpen, setObsOpen] = useState(false);
-  const [obsText, setObsText] = useState<string>('');
-  const handleOpenObs = (text?: string) => {
-    setObsText(text || '');
+  const [obsComments, setObsComments] = useState<{ 1?: string; 2?: string; 3?: string; 4?: string }>({});
+  const handleOpenObs = (comments: { 1?: string; 2?: string; 3?: string; 4?: string }) => {
+    setObsComments(comments);
     setObsOpen(true);
   };
   const handleCloseObs = () => setObsOpen(false);
@@ -171,16 +171,16 @@ export default function ActivitiesPanel({
                   const act = { ...a, description: a.description ?? '' };
 
                   const sentFlags = {
-                    1: !!a.seguimientoIEnviado,
-                    2: !!a.seguimientoIIEnviado,
-                    3: !!a.seguimientoIIIEnviado,
-                    4: !!a.seguimientoIVEnviado,
+                    1: !!a.followup1Sent,
+                    2: !!a.followup2Sent,
+                    3: !!a.followup3Sent,
+                    4: !!a.followup4Sent,
                   };
                   const draft = {
-                    1: a.seguimientoI ?? '',
-                    2: a.seguimientoII ?? '',
-                    3: a.seguimientoIII ?? '',
-                    4: a.seguimientoIV ?? '',
+                    1: a.followup1 ?? '',
+                    2: a.followup2 ?? '',
+                    3: a.followup3 ?? '',
+                    4: a.followup4 ?? '',
                   };
                   const files = a.files || { 1: null, 2: null, 3: null, 4: null };
 
@@ -195,7 +195,7 @@ export default function ActivitiesPanel({
                       onSaveSeg={onUpdateSeg}
                       onSendSeg={openSend}
                       onDeleteSeg={onDeleteSeg}
-                      onOpenObservations={(text) => handleOpenObs(text)}
+                      onOpenObservations={(comments) => handleOpenObs(comments)}
                     />
                   );
                 })
@@ -230,7 +230,7 @@ export default function ActivitiesPanel({
       {/* Modal de Observaciones */}
       <ActivityObservationsDialog
         open={obsOpen}
-        observations={obsText}
+        comments={obsComments}
         onClose={handleCloseObs}
       />
 

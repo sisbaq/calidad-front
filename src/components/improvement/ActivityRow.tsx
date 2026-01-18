@@ -11,7 +11,14 @@ import {
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
 import FollowupsList from './FollowupsList';
-import type { ImprovementPlanActivity, FileAttachment } from '@/types/improvement';
+import type { ImprovementPlanActivity, FileAttachment, FollowupIndex } from '@/types/improvement';
+
+interface FollowupComments {
+  1?: string;
+  2?: string;
+  3?: string;
+  4?: string;
+}
 
 interface ActivityRowProps {
   findingId: string | number;
@@ -38,16 +45,8 @@ interface ActivityRowProps {
     segKey: string;
   }) => void;
 
-  onOpenObservations?: (text?: string) => void;
+  onOpenObservations?: (comments: FollowupComments) => void;
 }
-
-
-type ActivityWithObs = ImprovementPlanActivity & Partial<{
-  observations: string;
-  observacion: string;
-  observaciones: string;
-  notes: string;
-}>;
 
 export default function ActivityRow({
   findingId,
@@ -58,7 +57,7 @@ export default function ActivityRow({
   onSaveSeg,
   onSendSeg,
   onDeleteSeg,
-  onOpenObservations = () => { },
+  onOpenObservations = () => {},
 }: ActivityRowProps) {
   const toNum = (obj: Record<number, unknown> = {}): Record<number, string> => ({
     1: (obj[1] ?? '') as string,
@@ -90,20 +89,20 @@ export default function ActivityRow({
   );
   const sentNum = toBools(sentFlags);
 
-  const idxToSegKey = (idx: 1 | 2 | 3 | 4) =>
+  const idxToSegKey = (idx: FollowupIndex) =>
     ({
-      1: 'seguimientoI',
-      2: 'seguimientoII',
-      3: 'seguimientoIII',
-      4: 'seguimientoIV',
+      1: 'followup1',
+      2: 'followup2',
+      3: 'followup3',
+      4: 'followup4',
     } as const)[idx];
 
-  const obsText =
-    (activity as ActivityWithObs).observations ??
-    (activity as ActivityWithObs).observacion ??
-    (activity as ActivityWithObs).observaciones ??
-    (activity as ActivityWithObs).notes ??
-    undefined;
+  const followupComments: FollowupComments = {
+    1: activity.followup1Comment,
+    2: activity.followup2Comment,
+    3: activity.followup3Comment,
+    4: activity.followup4Comment,
+  };
 
   return (
     <>
@@ -135,7 +134,7 @@ export default function ActivityRow({
 
         <TableCell align="right" sx={{ width: 160 }}>
           <Tooltip title="Ver observaciones">
-            <IconButton size="small" onClick={() => onOpenObservations(obsText)}>
+            <IconButton size="small" onClick={() => onOpenObservations(followupComments)}>
               <InfoOutlinedIcon />
             </IconButton>
           </Tooltip>
@@ -155,11 +154,11 @@ export default function ActivityRow({
                 setFiles={setFiles}
                 sentFlags={sentNum}
                 onSave={(idx, value) => {
-                  const segKey = idxToSegKey(idx as 1 | 2 | 3 | 4);
+                  const segKey = idxToSegKey(idx as FollowupIndex);
                   onSaveSeg({ findingId, activityId: activity.id, segKey, value });
                 }}
                 onSend={(idx, value) => {
-                  const segKey = idxToSegKey(idx as 1 | 2 | 3 | 4);
+                  const segKey = idxToSegKey(idx as FollowupIndex);
                   onSendSeg({
                     findingId,
                     activityId: activity.id,
@@ -171,7 +170,7 @@ export default function ActivityRow({
                 onDelete={(idx) => {
                   const sent = !!sentNum[idx];
                   if (sent) return;
-                  const segKey = idxToSegKey(idx as 1 | 2 | 3 | 4);
+                  const segKey = idxToSegKey(idx as FollowupIndex);
                   onDeleteSeg?.({ findingId, activityId: activity.id, segKey });
                 }}
               />

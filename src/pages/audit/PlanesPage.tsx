@@ -5,7 +5,6 @@ import type { PlanSearchFiltersValue } from '@components/audit/PlanSearchFilters
 import PlanesTable from '@components/audit/PlanesTable';
 import type { ImprovementPlanWithDetails } from '@/types/improvement';
 import PlanDetailDialog from '@components/audit/PlanDetailDialog';
-import type { PlanDetail } from '@components/audit/PlanDetailDialog';
 import ClosePlanDialog from '@components/audit/ClosePlanDialog';
 import { getImprovementPlansRaw, closeImprovementPlan } from '@/services/improvement.service';
 import { mapApiPlanToTableRow } from '@/mappers/improvement.mapper';
@@ -136,14 +135,9 @@ export default function PlanesMejoramientoPage() {
       <PlanDetailDialog
         open={openDetail}
         onClose={() => setOpenDetail(false)}
-        plan={selected as unknown as PlanDetail}
+        plan={selected}
         colorPrimary={COLOR_PRIMARY}
         colorSuccess={COLOR_SUCCESS}
-        onCloseActivity={async (activityId) => {
-          void activityId;
-          // Llamar al endpoint real aquí.
-          // await closeImprovementActivity(activityId);
-        }}
       />
 
       <ClosePlanDialog

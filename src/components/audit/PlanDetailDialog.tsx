@@ -12,49 +12,16 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 
-import { getImprovementPlanActivitiesByPlanId, updateActivityObservation } from '@/services/improvement.service';
-import type { ImprovementPlanActivity } from '@/types/improvement';
-
-export type PlanEstado = 'Abierto' | 'Cerrado' | 'Vencido' | string;
-
-export interface Seguimiento {
-  titulo?: string;
-  descripcion?: string;
-  detalle?: string;
-}
-
-export interface ObservacionAuditor {
-  id: string;
-  texto: string;
-  seguimientoId?: string;
-}
-
-export type EvidenciaItem =
-  | { nombre?: string; filename?: string; titulo?: string; url?: string }
-  | string;
-
-export interface PlanDetail {
-  id: string;
-  proceso?: string;
-  estado?: PlanEstado;
-  actividades?: string[];
-  seguimientosPorActividad?: Seguimiento[][];
-  seguimientos?: Seguimiento[];
-  evidenciasPorActividad?: EvidenciaItem[][][];
-  evidenciasByActividad?: EvidenciaItem[][][];
-  fechaInicio?: string;
-  fechaVencimiento?: string;
-  observacionesAuditor?: ObservacionAuditor[];
-}
+import { getImprovementPlanActivitiesByPlanId, updateActivityObservation, closeImprovementPlanActivity } from '@/services/improvement.service';
+import type { ImprovementPlanActivity, ImprovementPlanWithDetails } from '@/types/improvement';
+import { mapPlanStatus } from '@/mappers/improvement.mapper';
 
 interface PlanDetailDialogProps {
   open: boolean;
   onClose: () => void;
-  plan: PlanDetail | null;
+  plan: ImprovementPlanWithDetails | null;
   colorPrimary?: string; // #142334
   colorSuccess?: string; // #279B48
-  /** Callback opcional: cierra una actividad en backend. Debe lanzar si falla. */
-  onCloseActivity?: (activityId: string | number) => Promise<void> | void;
 }
 
 const segRoman: string[] = ['I', 'II', 'III', 'IV'];
@@ -84,7 +51,6 @@ export default function PlanDetailDialog({
   plan,
   colorPrimary = '#142334',
   colorSuccess = '#279B48',
-  onCloseActivity,
 }: PlanDetailDialogProps) {
 
   const [activities, setActivities] = React.useState<ImprovementPlanActivity[]>([]);
@@ -189,16 +155,15 @@ export default function PlanDetailDialog({
       setClosing(true);
       setClosingId(closeDlg.activityId);
 
-      // Delega en backend si te pasaron el callback
-      if (onCloseActivity) {
-        await onCloseActivity(closeDlg.activityId);
-      }
+      // Call the close service directly - returns the updated activity
+      const updatedActivity = await closeImprovementPlanActivity(closeDlg.activityId);
 
-
-      if (plan?.id) {
-        const data = await getImprovementPlanActivitiesByPlanId(plan.id);
-        setActivities(data);
-      }
+      // Update the local state with the returned activity
+      setActivities(prev => 
+        prev.map(act => 
+          act.id === updatedActivity.id ? updatedActivity : act
+        )
+      );
 
       setClosedIds(prev => {
         const next = new Set(prev);
@@ -229,11 +194,11 @@ export default function PlanDetailDialog({
             <Stack direction="row" spacing={2}>
               <Box flex={1}>
                 <Typography variant="caption" color="text.secondary">Proceso</Typography>
-                <Typography variant="body2">{plan.proceso || 'N/A'}</Typography>
+                <Typography variant="body2">{plan.processName || 'N/A'}</Typography>
               </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary">Estado</Typography>
-                <Typography variant="body2">{plan.estado || 'N/A'}</Typography>
+                <Typography variant="body2">{mapPlanStatus(plan.status)}</Typography>
               </Box>
             </Stack>
           </SectionCard>
@@ -253,16 +218,16 @@ export default function PlanDetailDialog({
             <SectionCard title="Actividades de mejoramiento">
               {activities.length > 0 ? (
                 activities.map((activity) => {
-                  const seguimientos = [
-                    { num: 1, text: (activity as any).seguimientoI, file: (activity as any).files?.[1], obs: (activity as any).seguimientoIComentario },
-                    { num: 2, text: (activity as any).seguimientoII, file: (activity as any).files?.[2], obs: (activity as any).seguimientoIIComentario },
-                    { num: 3, text: (activity as any).seguimientoIII, file: (activity as any).files?.[3], obs: (activity as any).seguimientoIIIComentario },
-                    { num: 4, text: (activity as any).seguimientoIV, file: (activity as any).files?.[4], obs: (activity as any).seguimientoIVComentario },
+                  const followups = [
+                    { num: 1, text: activity.followup1, file: activity.files?.[1], obs: activity.followup1Comment },
+                    { num: 2, text: activity.followup2, file: activity.files?.[2], obs: activity.followup2Comment },
+                    { num: 3, text: activity.followup3, file: activity.files?.[3], obs: activity.followup3Comment },
+                    { num: 4, text: activity.followup4, file: activity.files?.[4], obs: activity.followup4Comment },
                   ].filter(seg => seg.text);
 
                   return (
                     <Accordion
-                      key={`act-${(activity as any).id}`}
+                      key={`act-${activity.id}`}
                       sx={{ mb: 1, borderRadius: 2, '&:before': { display: 'none' } }}
                     >
                       <AccordionSummary
@@ -271,19 +236,24 @@ export default function PlanDetailDialog({
                       >
                         <Stack direction="row" alignItems="center" sx={{ width: '100%' }}>
                           <Typography sx={{ fontWeight: 700, color: colorPrimary, flex: 1, pr: 2 }}>
-                            {(activity as any).description || 'Actividad'}
+                            {activity.description || 'Actividad'}
                           </Typography>
 
                           <Tooltip title="Cerrar esta actividad">
-                            <span>
+                            <Box
+                              component="div"
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onTouchStart={(e) => e.stopPropagation()}
+                            >
                               <Button
                                 size="small"
                                 variant="contained"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  requestCloseActivity((activity as any).id);
+                                  requestCloseActivity(activity.id);
                                 }}
-                                disabled={closedIds.has((activity as any).id) || closingId === (activity as any).id}
+                                disabled={activity.closed || closedIds.has(activity.id) || closingId === activity.id}
                                 sx={{
                                   fontWeight: 700,
                                   borderRadius: 1.5,
@@ -294,36 +264,39 @@ export default function PlanDetailDialog({
                               >
                                 CERRAR ACTIVIDAD
                               </Button>
-                            </span>
+                            </Box>
                           </Tooltip>
                         </Stack>
                       </AccordionSummary>
 
                       <AccordionDetails>
                         <Stack spacing={1}>
-                          {seguimientos.length > 0 ? (
-                            seguimientos.map((seg) => (
+                          {followups.length > 0 ? (
+                            followups.map((seg) => (
                               <Paper key={`seg-${seg.num}`} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
                                 <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
                                   <Typography variant="subtitle2" sx={{ fontWeight: 700, color: colorPrimary }}>
                                     {`Seguimiento ${segRoman[seg.num - 1]}`}
                                   </Typography>
                                   <Stack direction="row" spacing={0.5}>
-                                    <Tooltip title="Agregar observación">
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => openObs((activity as any).id, seg.num as 1 | 2 | 3 | 4, `Seguimiento ${segRoman[seg.num - 1]}`)}
-                                        sx={{ color: colorPrimary }}
-                                      >
-                                        <ChatBubbleOutlineIcon fontSize="small" />
-                                      </IconButton>
+                                    <Tooltip title={activity.closed ? "No se pueden agregar observaciones a actividades cerradas" : "Agregar observación"}>
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => openObs(activity.id, seg.num as 1 | 2 | 3 | 4, `Seguimiento ${segRoman[seg.num - 1]}`)}
+                                          disabled={activity.closed}
+                                          sx={{ color: colorPrimary }}
+                                        >
+                                          <ChatBubbleOutlineIcon fontSize="small" />
+                                        </IconButton>
+                                      </span>
                                     </Tooltip>
                                     {seg.file && (
                                       <Tooltip title="Ver archivo">
                                         <IconButton
                                           size="small"
                                           component="a"
-                                          href={(seg.file as any).url}
+                                          href={seg.file.url}
                                           target="_blank"
                                           sx={{ color: colorPrimary }}
                                         >
@@ -349,14 +322,18 @@ export default function PlanDetailDialog({
                                           {seg.obs}
                                         </Typography>
                                       </Box>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => openEdit((activity as any).id, seg.num as 1 | 2 | 3 | 4, seg.obs || '')}
-                                        sx={{ color: colorPrimary, ml: 1 }}
-                                        title="Editar observación"
-                                      >
-                                        <EditOutlinedIcon fontSize="small" />
-                                      </IconButton>
+                                      <Tooltip title={activity.closed ? "No se pueden editar observaciones de actividades cerradas" : "Editar observación"}>
+                                        <span>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => openEdit(activity.id, seg.num as 1 | 2 | 3 | 4, seg.obs || '')}
+                                            disabled={activity.closed}
+                                            sx={{ color: colorPrimary, ml: 1 }}
+                                          >
+                                            <EditOutlinedIcon fontSize="small" />
+                                          </IconButton>
+                                        </span>
+                                      </Tooltip>
                                     </Stack>
                                   </Paper>
                                 )}
@@ -380,27 +357,27 @@ export default function PlanDetailDialog({
             </SectionCard>
           )}
 
-          {(plan.fechaInicio || plan.fechaVencimiento) && (
+          {(plan.startDate || plan.endDate) && (
             <Paper variant="outlined" sx={{ borderRadius: 2, mt: 1, p: 1.5 }}>
               <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
                 Cronograma
               </Typography>
               <Stack direction="row" spacing={3}>
-                {plan.fechaInicio && (
+                {plan.startDate && (
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarMonthIcon color="primary" fontSize="small" />
                     <Box>
                       <Typography variant="caption" color="text.secondary">Fecha inicial</Typography>
-                      <Typography variant="body2" sx={{ mt: 0.25 }}>{plan.fechaInicio}</Typography>
+                      <Typography variant="body2" sx={{ mt: 0.25 }}>{plan.startDate}</Typography>
                     </Box>
                   </Stack>
                 )}
-                {plan.fechaVencimiento && (
+                {plan.endDate && (
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarMonthIcon color="error" fontSize="small" />
                     <Box>
                       <Typography variant="caption" color="text.secondary">Fecha terminación</Typography>
-                      <Typography variant="body2" sx={{ mt: 0.25 }}>{plan.fechaVencimiento}</Typography>
+                      <Typography variant="body2" sx={{ mt: 0.25 }}>{plan.endDate}</Typography>
                     </Box>
                   </Stack>
                 )}

@@ -22,6 +22,7 @@ interface FollowupItemProps {
   baseValue: string;
   sent: boolean;
   fileObj: FileAttachmentType | File | null;
+  isClosed?: boolean;
   onChange: (value: string) => void;
   onPickFile: (file: File) => void;
   onClearFile: () => void;
@@ -40,6 +41,7 @@ export default function FollowupItem({
   baseValue,
   sent,
   fileObj,
+  isClosed = false,
   onChange,
   onPickFile,
   onClearFile,
@@ -48,8 +50,8 @@ export default function FollowupItem({
   onSend,
   onDelete,
 }: FollowupItemProps) {
-  // Si está enviado, se bloquea edición.
-  const disabled = sent;
+  // Si está enviado o la actividad está cerrada, se bloquea edición.
+  const disabled = sent || isClosed;
 
   // Detecta si hay cambios locales vs. base almacenada (para habilitar Guardar)
   const hasChanges = (value ?? '') !== (baseValue ?? '');
@@ -133,14 +135,14 @@ export default function FollowupItem({
               </span>
             </Tooltip>
 
-            {/* Eliminar (solo si no está enviado) */}
-            <Tooltip title={sent ? 'No se puede eliminar: ya fue enviado' : 'Eliminar seguimiento'}>
+            {/* Eliminar (solo si no está enviado y actividad no cerrada) */}
+            <Tooltip title={isClosed ? 'No se puede eliminar: actividad cerrada' : sent ? 'No se puede eliminar: ya fue enviado' : 'Eliminar seguimiento'}>
               <span>
                 <IconButton
                   size="small"
                   color="error"
                   onClick={() => setConfirmDelSeg(true)}
-                  disabled={sent}
+                  disabled={disabled}
                 >
                   <DeleteRoundedIcon fontSize="small" />
                 </IconButton>

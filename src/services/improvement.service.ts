@@ -225,6 +225,28 @@ export const deleteImprovementPlanActivity = async (
 };
 
 /**
+ * Closes an improvement plan activity by setting actCerrada to true
+ */
+export const closeImprovementPlanActivity = async (
+  activityId: number | string
+): Promise<ImprovementPlanActivity> => {
+  try {
+    const payload: UpdateActivityPayload = {
+      actCerrada: true,
+    };
+
+    const { data } = await axiosInstance.put(
+      `/editar/planActividadesMejoramiento/${activityId}`,
+      payload
+    );
+    return mapApiActivityToFrontend(data);
+  } catch (error) {
+    console.error('Failed to close improvement plan activity:', error);
+    throw new Error('No se pudo cerrar la actividad de mejoramiento.');
+  }
+};
+
+/**
  * Uploads a file for a specific seguimiento (follow-up) of an activity
  */
 export const uploadActivityFollowupFile = async (

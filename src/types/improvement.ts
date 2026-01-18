@@ -2,22 +2,26 @@
  * Types for Improvement Plans (Plan de Mejoramiento) and Activities
  */
 
+/** Followup index type (1-4) */
+export type FollowupIndex = 1 | 2 | 3 | 4;
+
 // Frontend types
 export interface ImprovementPlanActivity {
   id: string | number;
   description: string;
-  seguimientoI: string;
-  seguimientoII: string;
-  seguimientoIII: string;
-  seguimientoIV: string;
-  seguimientoIEnviado: boolean;
-  seguimientoIIEnviado: boolean;
-  seguimientoIIIEnviado: boolean;
-  seguimientoIVEnviado: boolean;
-  seguimientoIComentario?: string;
-  seguimientoIIComentario?: string;
-  seguimientoIIIComentario?: string;
-  seguimientoIVComentario?: string;
+  closed: boolean;
+  followup1: string;
+  followup2: string;
+  followup3: string;
+  followup4: string;
+  followup1Sent: boolean;
+  followup2Sent: boolean;
+  followup3Sent: boolean;
+  followup4Sent: boolean;
+  followup1Comment?: string;
+  followup2Comment?: string;
+  followup3Comment?: string;
+  followup4Comment?: string;
   files?: {
     1: FileAttachment | null;
     2: FileAttachment | null;
@@ -121,6 +125,8 @@ export interface ApiImprovementPlanActivity {
   actNomActividad: string;
   actCreadoEl: string;
   actActualizadoEl: string | null;
+  actEstado: boolean;
+  actCerrada: boolean;
   actSeguimiento1: string;
   actSeguimiento2: string;
   actSeguimiento3: string;
@@ -133,7 +139,6 @@ export interface ApiImprovementPlanActivity {
   actObservSeguimiento2: string | null;
   actObservSeguimiento3: string | null;
   actObservSeguimiento4: string | null;
-  actEstado: boolean;
   fkCreadoPor: ApiUser;
   fkActualizadoPor: ApiUser | null;
   fkPlanMejoramiento: {
@@ -187,6 +192,7 @@ export interface CreateActivityPayload {
 
 export interface UpdateActivityPayload {
   actNomActividad?: string;
+  actCerrada?: boolean;
   actSeguimiento1?: string;
   actSeguimiento2?: string;
   actSeguimiento3?: string;
