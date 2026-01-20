@@ -12,6 +12,8 @@ import {
   Typography,
   Stack,
   Button,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ActivityRow from './ActivityRow';
@@ -71,8 +73,17 @@ export default function ActivitiesPanel({
     payload: Parameters<typeof onSendSeg>[0] | null;
   }>({ open: false, payload: null });
 
-  const openSend = (payload: Parameters<typeof onSendSeg>[0]) =>
+  // error message for validation
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const openSend = (payload: Parameters<typeof onSendSeg>[0]) => {
+    // Validate that seguimiento text is not empty
+    if (!payload.value || payload.value.trim() === '') {
+      setErrorMsg('El campo de seguimiento es requerido para enviar');
+      return;
+    }
     setConfirm({ open: true, payload });
+  };
   const closeSend = () => setConfirm({ open: false, payload: null });
   const doSend = async () => {
     const p = confirm.payload;
@@ -240,6 +251,18 @@ export default function ActivitiesPanel({
         onClose={handleCloseAddModal}
         onSave={handleSaveActivity}
       />
+
+      {/* Error Snackbar for validation */}
+      <Snackbar
+        open={!!errorMsg}
+        autoHideDuration={4000}
+        onClose={() => setErrorMsg(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%' }}>
+          {errorMsg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

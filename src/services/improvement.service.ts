@@ -256,8 +256,9 @@ export const uploadActivityFollowupFile = async (
 ): Promise<void> => {
   try {
     const formData = new FormData();
-    formData.append('archivo', file);
+    // seguimiento must be appended BEFORE the file so Multer can access it when determining the destination
     formData.append('seguimiento', seguimiento.toString());
+    formData.append('archivo', file);
 
     await axiosInstance.post(
       `/crear/archivo/planActividadMejoramiento/${activityId}`,
