@@ -12,6 +12,8 @@ import {
   Typography,
   Stack,
   Button,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ActivityRow from './ActivityRow';
@@ -71,8 +73,17 @@ export default function ActivitiesPanel({
     payload: Parameters<typeof onSendSeg>[0] | null;
   }>({ open: false, payload: null });
 
-  const openSend = (payload: Parameters<typeof onSendSeg>[0]) =>
+  // error message for validation
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const openSend = (payload: Parameters<typeof onSendSeg>[0]) => {
+    // Validate that seguimiento text is not empty
+    if (!payload.value || payload.value.trim() === '') {
+      setErrorMsg('El campo de seguimiento es requerido para enviar');
+      return;
+    }
     setConfirm({ open: true, payload });
+  };
   const closeSend = () => setConfirm({ open: false, payload: null });
   const doSend = async () => {
     const p = confirm.payload;
@@ -82,9 +93,9 @@ export default function ActivitiesPanel({
   };
 
   const [obsOpen, setObsOpen] = useState(false);
-  const [obsText, setObsText] = useState<string>('');
-  const handleOpenObs = (text?: string) => {
-    setObsText(text || '');
+  const [obsComments, setObsComments] = useState<{ 1?: string; 2?: string; 3?: string; 4?: string }>({});
+  const handleOpenObs = (comments: { 1?: string; 2?: string; 3?: string; 4?: string }) => {
+    setObsComments(comments);
     setObsOpen(true);
   };
   const handleCloseObs = () => setObsOpen(false);
@@ -166,16 +177,16 @@ export default function ActivitiesPanel({
                 paginated.map((a, idx) => {
                   const act = { ...a, description: a.description ?? '' };
                   const sentFlags = {
-                    1: !!a.seguimientoIEnviado,
-                    2: !!a.seguimientoIIEnviado,
-                    3: !!a.seguimientoIIIEnviado,
-                    4: !!a.seguimientoIVEnviado,
+                    1: !!a.followup1Sent,
+                    2: !!a.followup2Sent,
+                    3: !!a.followup3Sent,
+                    4: !!a.followup4Sent,
                   };
                   const draft = {
-                    1: a.seguimientoI ?? '',
-                    2: a.seguimientoII ?? '',
-                    3: a.seguimientoIII ?? '',
-                    4: a.seguimientoIV ?? '',
+                    1: a.followup1 ?? '',
+                    2: a.followup2 ?? '',
+                    3: a.followup3 ?? '',
+                    4: a.followup4 ?? '',
                   };
                   const files = a.files || { 1: null, 2: null, 3: null, 4: null };
 
@@ -190,7 +201,7 @@ export default function ActivitiesPanel({
                       onSaveSeg={onUpdateSeg}
                       onSendSeg={openSend}
                       onDeleteSeg={onDeleteSeg}
-                      onOpenObservations={(text) => handleOpenObs(text)}
+                      onOpenObservations={(comments) => handleOpenObs(comments)}
                     />
                   );
                 })
@@ -223,7 +234,7 @@ export default function ActivitiesPanel({
 
       <ActivityObservationsDialog
         open={obsOpen}
-        observations={obsText}
+        comments={obsComments}
         onClose={handleCloseObs}
       />
 
@@ -232,6 +243,18 @@ export default function ActivitiesPanel({
         onClose={handleCloseAddModal}
         onSave={handleSaveActivity}
       />
+
+      {/* Error Snackbar for validation */}
+      <Snackbar
+        open={!!errorMsg}
+        autoHideDuration={4000}
+        onClose={() => setErrorMsg(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%' }}>
+          {errorMsg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
