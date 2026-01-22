@@ -48,10 +48,10 @@ const BLUE = '#142334';
 
 export default function ActivitiesPanel({
   finding,
-  onUpdateSeg = () => {},
-  onSendSeg = () => {},
-  onDeleteSeg = () => {},
-  onAddActivity = () => {},
+  onUpdateSeg = () => { },
+  onSendSeg = () => { },
+  onDeleteSeg = () => { },
+  onAddActivity = () => { },
 }: ActivitiesPanelProps) {
   if (!finding) return null;
   const activities = Array.isArray(finding.activities) ? finding.activities : [];
@@ -81,7 +81,6 @@ export default function ActivitiesPanel({
     closeSend();
   };
 
-  // modal de observaciones
   const [obsOpen, setObsOpen] = useState(false);
   const [obsText, setObsText] = useState<string>('');
   const handleOpenObs = (text?: string) => {
@@ -90,7 +89,6 @@ export default function ActivitiesPanel({
   };
   const handleCloseObs = () => setObsOpen(false);
 
-  // modal de añadir actividad
   const [addModalOpen, setAddModalOpen] = useState(false);
   const handleOpenAddModal = () => setAddModalOpen(true);
   const handleCloseAddModal = () => setAddModalOpen(false);
@@ -106,9 +104,7 @@ export default function ActivitiesPanel({
         p: { xs: 1.5, md: 2 },
       }}
     >
-      {/* Contenedor limitado para que la tabla no ocupe todo el ancho */}
       <Box sx={{ maxWidth: 960, mx: 'auto', width: '100%' }}>
-        {/* Encabezado + botón Añadir actividad */}
         <Stack
           direction="row"
           alignItems="center"
@@ -169,7 +165,6 @@ export default function ActivitiesPanel({
               ) : (
                 paginated.map((a, idx) => {
                   const act = { ...a, description: a.description ?? '' };
-
                   const sentFlags = {
                     1: !!a.seguimientoIEnviado,
                     2: !!a.seguimientoIIEnviado,
@@ -218,7 +213,6 @@ export default function ActivitiesPanel({
         </TableContainer>
       </Box>
 
-      {/* Confirmación enviar seguimiento */}
       <ConfirmDialog
         open={confirm.open}
         title="Enviar seguimiento"
@@ -227,14 +221,12 @@ export default function ActivitiesPanel({
         onConfirm={doSend}
       />
 
-      {/* Modal de Observaciones */}
       <ActivityObservationsDialog
         open={obsOpen}
         observations={obsText}
         onClose={handleCloseObs}
       />
 
-      {/* Modal de Añadir Actividad */}
       <AddActivityModal
         open={addModalOpen}
         onClose={handleCloseAddModal}

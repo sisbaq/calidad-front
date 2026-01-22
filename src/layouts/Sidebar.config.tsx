@@ -157,7 +157,7 @@ const ALL_ROUTES: NavItem[] = [
     rolesAllowed: [ROLES.ADMIN],
   },
   {
-    title: "Ver documentos tv",
+    title: "Ver Documentos de consulta",
     icon: <LibraryBooksIcon />,
     segment: "ver-documentos-transversales",
     rolesAllowed: [ROLES.GESTOR],
@@ -189,7 +189,7 @@ const ALL_ROUTES: NavItem[] = [
     children: [
       {
         segment: "indicadores-por-desempeno",
-        title: "Indicadores por desempeño",
+        title: "Indicadores de gestión",
         icon: <AnalyticsIcon />,
       },
       // {
@@ -232,7 +232,7 @@ const ALL_ROUTES: NavItem[] = [
         segment: "no-conformidad",
         title: "Crear Hallazgos",
         icon: <CrisisAlertIcon />,
-        rolesAllowed: [ROLES.AUDITOR],
+        rolesAllowed: [ROLES.AUDITOR, ROLES.ADMIN],
       },
       {
         segment: "gestionar-hallazgos",
