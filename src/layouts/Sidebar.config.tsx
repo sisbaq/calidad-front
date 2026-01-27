@@ -11,7 +11,7 @@ import PolicyIcon from "@mui/icons-material/Policy";
 // import BusinessIcon from '@mui/icons-material/Business';
 // import WorkIcon from '@mui/icons-material/Work';
 // import LogoutIcon from '@mui/icons-material/Logout';
-import AssessmentIcon from "@mui/icons-material/Assessment";
+// import AssessmentIcon from "@mui/icons-material/Assessment";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 // import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import ContentPasteSearchIcon from "@mui/icons-material/ContentPasteSearch";
@@ -35,6 +35,7 @@ import ApprovalIcon from "@mui/icons-material/Approval";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import UploadIcon from "@mui/icons-material/Upload";
 import DownloadIcon from "@mui/icons-material/Download";
+import SettingsIcon from '@mui/icons-material/Settings';
 export interface NavItem {
   title: string;
   icon?: ReactNode;
@@ -181,24 +182,24 @@ const ALL_ROUTES: NavItem[] = [
   //   kind: "header",
   //   title: "EVALUACIÓN",
   // },
+
   {
-    title: "Evaluación de desempeño",
-    icon: <AssessmentIcon />,
-    segment: "evaluacion",
-    rolesAllowed: [ROLES.GESTOR, ROLES.ADMIN],
-    children: [
-      {
-        segment: "indicadores-por-desempeno",
-        title: "Indicadores de gestión",
-        icon: <AnalyticsIcon />,
-      },
-      // {
-      //   segment: "revision-por-la-direccion",
-      //   title: "Revisión Dirección",
-      //   icon: <QueryStatsIcon />,
-      //   rolesAllowed: [ROLES.ADMIN],
-      // },
-    ],
+    kind: "header",
+    title: "OPERACIÓN",
+    rolesAllowed: [ROLES.ADMIN, ROLES.GESTOR],
+  },
+    {
+    title: "Indicadores de gestión",
+    icon: <AnalyticsIcon />,
+    segment: "indicadores-de-gestion",
+    rolesAllowed: [ROLES.ADMIN, ROLES.GESTOR],
+  },
+
+  {
+    title: "Configurar indicadores",
+    icon: <SettingsIcon />,
+    segment: "configuracion-indicadores",
+    rolesAllowed: [ROLES.ADMIN],
   },
   {
     kind: "header",

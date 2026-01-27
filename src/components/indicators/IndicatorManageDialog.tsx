@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, FC } from 'react';
 
 import {
-  Box,
   Button,
   Dialog,
   DialogActions,
@@ -16,24 +15,25 @@ import {
   TableRow,
   TextField,
   Typography,
+  Tooltip,
   Paper,
+  IconButton,
 } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
+import SendIcon from '@mui/icons-material/Send';
 import { evaluate } from 'mathjs';
-import { appColors } from '@/theme/colors';
 
 import type {
   Indicator,
   IndicatorVariable,
   IndicatorPeriodRow,
 } from '../../types/indicators';
+
 import {
   PERIODICITY_CONFIG,
   TREND_OPTIONS,
   formatNumber,
   getPeriodConfig,
-  getPeriodLabel,
 } from '../../types/indicators';
 
 interface IndicatorManageDialogProps {
@@ -80,6 +80,8 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
   onSave,
 }) => {
   const [rows, setRows] = useState<IndicatorPeriodRow[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
 
   const preparedFormula = useMemo<PreparedFormula | null>(() => {
     if (!indicator) return null;
@@ -108,12 +110,13 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
 
         return {
           index: index + 1,
-         label: getPeriodLabel(indicator.periodicity)[index],
+          label: `${index + 1}`,
           meta: metaPerPeriod,
           values,
           result: undefined,
           observation: '',
-          evidence: '',
+          evidence: null,
+          sent: false,
         };
       },
     );
@@ -131,6 +134,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
 
           const updated = [...prev];
           const currentRow = updated[rowIndex];
+          if (currentRow.sent) return prev;
 
           const newValues = {
             ...currentRow.values,
@@ -178,6 +182,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
       const value = event.target.value;
       setRows((prev) => {
         const updated = [...prev];
+        if (updated[rowIndex].sent) return prev;
         updated[rowIndex] = {
           ...updated[rowIndex],
           observation: value,
@@ -188,246 +193,237 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
 
   const handleChangeEvidence =
     (rowIndex: number) => (event: ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
+      const file = event.target.files?.[0] ?? null;
+
       setRows((prev) => {
         const updated = [...prev];
+        if (updated[rowIndex].sent) return prev;
         updated[rowIndex] = {
           ...updated[rowIndex],
-          evidence: value,
+          evidence: file,
         };
         return updated;
       });
     };
 
-  const handleClose = () => {
-    onClose();
+  const handleSendRow = () => {
+    if (selectedRowIndex === null) return;
+
+    setRows((prev) => {
+      const updated = [...prev];
+      updated[selectedRowIndex] = {
+        ...updated[selectedRowIndex],
+        sent: true,
+      };
+      return updated;
+    });
+
+    setConfirmOpen(false);
+    setSelectedRowIndex(null);
   };
 
   const handleSave = () => {
-    if (onSave) {
-      onSave(rows);
-    }
+    onSave?.(rows);
     onClose();
   };
+
+  const isRowValidToSend = (row: IndicatorPeriodRow): boolean => {
+    const variablesFilled = Object.values(row.values).every(
+      (v) => v !== '' && v !== null && v !== undefined,
+    );
+
+    const hasValidResult =
+      typeof row.result === 'number' && Number.isFinite(row.result);
+
+    const hasObservation =
+      row.observation.trim().length > 0;
+
+    return variablesFilled && hasValidResult && hasObservation;
+  };
+
 
   const periodicidadLabel =
     indicator &&
     PERIODICITY_CONFIG.find((p) => p.value === indicator.periodicity)?.label;
+
   const tendenciaLabel =
     indicator &&
     TREND_OPTIONS.find((t) => t.value === indicator.trend)?.label;
 
   return (
-    <Dialog
-      fullWidth
-      maxWidth="xl"
-      open={open}
-      onClose={handleClose}
-      scroll="paper"
-      sx={{
-        '& .MuiDialog-paper': {
-          maxHeight: '90vh',
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          borderBottom: '1px solid #eee',
-          backgroundColor: '#f7f9fc',
-        }}
+    <>
+      <Dialog
+        fullWidth
+        maxWidth="xl"
+        open={open}
+        onClose={onClose}
+        scroll="paper"
       >
-        {indicator && (
-          <>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {indicator.name}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.5 }}
-            >
-              Frecuencia: {periodicidadLabel} · Tendencia: {tendenciaLabel}
-            </Typography>
-          </>
-        )}
-      </DialogTitle>
-      <DialogContent sx={{ p: 2.5 }}>
-        {indicator && (
-          <>
-            <Box
-              sx={{
-                mb: 2.5,
-                p: 2,
-                borderRadius: 1.5,
-                backgroundColor: '#e8f1ff',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1.5,
-              }}
-            >
-              <InfoOutlinedIcon
-                sx={{ color: appColors.blue, mt: '2px' }}
-                fontSize="small"
-              />
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Fórmula:{' '}
-                  <Typography
-                    component="span"
-                    variant="body2"
-                    sx={{ fontFamily: 'monospace' }}
-                  >
-                    {indicator.formula}
-                  </Typography>
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  Meta Anual:{' '}
-                  <strong>
-                    {formatNumber(indicator.annualTarget)} {indicator.unit}
-                  </strong>
-                </Typography>
-              </Box>
-            </Box>
-            <TableContainer
-              component={Paper}
-              sx={{
-                borderRadius: 2,
-                border: '1px solid #e0e0e0',
-                boxShadow: 'none',
-              }}
-            >
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600, minWidth: 80 }}>
-                      Período
-                    </TableCell>
-                    {(indicator.variables ?? []).map((v) => (
-                      <TableCell key={v.key} sx={{ fontWeight: 600 }}>
-                        {v.key}
-                      </TableCell>
-                    ))}
-                    <TableCell sx={{ fontWeight: 600 }}>Resultado</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Meta</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>
-                      Cumplimiento
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, minWidth: 260 }}>
-                      Observaciones de medición
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, minWidth: 140 }}>
-                      Anexo / Evidencia
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.map((row, rowIndex) => {
-                    const hasResult =
-                      typeof row.result === 'number' &&
-                      Number.isFinite(row.result);
+        <DialogTitle sx={{ borderBottom: '1px solid #eee' }}>
+          {indicator && (
+            <>
+              <Typography variant="h6">{indicator.name}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Frecuencia: {periodicidadLabel} · Tendencia: {tendenciaLabel}
+              </Typography>
+            </>
+          )}
+        </DialogTitle>
 
-                    let compliance: number | undefined;
+        <DialogContent>
+          <TableContainer component={Paper}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Período</TableCell>
+                  {(indicator?.variables ?? []).map((v) => (
+                    <TableCell key={v.key}>{v.key}</TableCell>
+                  ))}
+                  <TableCell>Resultado</TableCell>
+                  <TableCell>Meta</TableCell>
+                  <TableCell>Cumplimiento</TableCell>
+                  <TableCell>Observaciones</TableCell>
+                  <TableCell>Evidencia</TableCell>
+                  <TableCell>Acciones</TableCell>
+                </TableRow>
+              </TableHead>
 
-                    if (
-                      hasResult &&
-                      typeof row.result === 'number' &&
-                      row.meta > 0
-                    ) {
-                      compliance = (row.result / row.meta) * 100;
-                    }
+              <TableBody>
+                {rows.map((row, rowIndex) => {
+                  const compliance =
+                    row.result && row.meta > 0
+                      ? (row.result / row.meta) * 100
+                      : undefined;
 
-                    return (
-                      <TableRow key={row.index} hover>
-                        <TableCell>{row.label}</TableCell>
-                        {(indicator.variables ?? []).map((v) => (
-                          <TableCell key={v.key}>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              type="number"
-                              value={row.values[v.key] ?? ''}
-                              onChange={handleChangeValue(rowIndex, v.key)}
-                              inputProps={{ step: '0.01' }}
-                            />
-                          </TableCell>
-                        ))}
-                        <TableCell>
-                          <Typography variant="body2">
-                            {hasResult && typeof row.result === 'number'
-                              ? `${formatNumber(row.result)} ${indicator.unit}`
-                              : '-'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {formatNumber(row.meta)} {indicator.unit}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color:
-                                compliance !== undefined && compliance >= 100
-                                  ? appColors.green
-                                  : 'text.primary',
-                              fontWeight: compliance ? 600 : 400,
-                            }}
-                          >
-                            {compliance !== undefined
-                              ? `${formatNumber(Number(compliance.toFixed(0)))}%`
-                              : '-'}
+                  const canSend = isRowValidToSend(row);
 
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
+                  return (
+                    <TableRow
+                      key={row.index}
+                      sx={{
+                        opacity: row.sent ? 0.6 : 1,
+                        backgroundColor: row.sent ? '#f5f5f5' : 'inherit',
+                      }}
+                    >
+                      <TableCell>{row.label}</TableCell>
+
+                      {(indicator?.variables ?? []).map((v) => (
+                        <TableCell key={v.key}>
                           <TextField
                             size="small"
+                            type="number"
                             fullWidth
-                            multiline
-                            minRows={3}
-                            maxRows={6}
-                            value={row.observation}
-                            onChange={handleChangeObservation(rowIndex)}
+                            disabled={row.sent}
+                            value={row.values[v.key] ?? ''}
+                            onChange={handleChangeValue(rowIndex, v.key)}
                           />
                         </TableCell>
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            fullWidth
-                            placeholder="URL, código o referencia"
-                            value={row.evidence}
+                      ))}
+
+                      <TableCell>
+                        {row.result
+                          ? `${formatNumber(row.result)} ${indicator?.unit}`
+                          : '-'}
+                      </TableCell>
+
+                      <TableCell>
+                        {formatNumber(row.meta)} {indicator?.unit}
+                      </TableCell>
+
+                      <TableCell>
+                        {compliance !== undefined
+                          ? `${formatNumber(compliance.toFixed(0))}%`
+                          : '-'}
+                      </TableCell>
+
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          multiline
+                          minRows={2}
+                          fullWidth
+                          disabled={row.sent}
+                          value={row.observation}
+                          onChange={handleChangeObservation(rowIndex)}
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <Button
+                          component="label"
+                          size="small"
+                          disabled={row.sent || Boolean(row.evidence)}
+                        >
+                          Subir
+                          <input
+                            hidden
+                            type="file"
                             onChange={handleChangeEvidence(rowIndex)}
                           />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-      </DialogContent>
-      <DialogActions sx={{ px: 2.5, pb: 2.5 }}>
-        <Button onClick={handleClose} sx={{ textTransform: 'none' }}>
-          Cerrar
-        </Button>
-        <Button
-          variant="contained"
-          sx={{
-            textTransform: 'none',
-            backgroundColor: appColors.blue,
-            '&:hover': {
-              backgroundColor: appColors.blue,
-              opacity: 0.9,
-            },
-          }}
-          onClick={handleSave}
-        >
-          Guardar cambios
-        </Button>
-      </DialogActions>
-    </Dialog>
+                        </Button>
+                        {row.evidence && (
+                          <Typography variant="caption" display="block">
+                            📎 {row.evidence.name}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+
+                        <Tooltip
+                          title={
+                            row.sent
+                              ? 'Registro ya enviado'
+                              : !canSend
+                                ? 'Debe completar todos los campos obligatorios antes de enviar'
+                                : 'Enviar registro'
+                          }
+                        >
+                          <span>
+                            <IconButton
+                              disabled={row.sent || !canSend}
+                              onClick={() => {
+                                setSelectedRowIndex(rowIndex);
+                                setConfirmOpen(true);
+                              }}
+                            >
+                              <SendIcon />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={onClose}>Cerrar</Button>
+          <Button variant="contained" onClick={handleSave}>
+            Guardar cambios
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirm Send Dialog */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Confirmar envío</DialogTitle>
+        <DialogContent>
+          <Typography>
+            ¿Está seguro que desea enviar este registro? Una vez enviado no podrá
+            editarlo.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={handleSendRow}>
+            Enviar
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };

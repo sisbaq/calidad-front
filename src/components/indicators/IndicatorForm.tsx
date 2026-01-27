@@ -153,11 +153,17 @@ export const IndicatorForm: FC<IndicatorFormProps> = ({ onSubmit, initialIndicat
   };
 
   const handleAddVariable = () => {
+    if (!canAddVariable) return;
+
     setValues((prev) => ({
       ...prev,
-      variables: [...prev.variables, { id: createId(), key: '', label: '', description: '' }],
+      variables: [
+        ...prev.variables,
+        { id: createId(), key: '', label: '', description: '' },
+      ],
     }));
   };
+
 
   const handleRemoveVariable = (id: string) => {
     setValues((prev) => {
@@ -255,6 +261,7 @@ export const IndicatorForm: FC<IndicatorFormProps> = ({ onSubmit, initialIndicat
       periodicity: values.periodicity,
       trend: values.trend,
       realValue,
+      active: true,
       responsible,
       variables: cleanedVariables,
     };
@@ -268,6 +275,24 @@ export const IndicatorForm: FC<IndicatorFormProps> = ({ onSubmit, initialIndicat
   };
 
   const isEditing = Boolean(initialIndicator);
+
+
+  const normalize = (s: string) => s.trim().toLowerCase();
+
+  const expectedVariableKeys = extractFormulaSuggestions(values.formula).map(normalize);
+
+  const selectedVariableKeys = values.variables
+    .map((v) => v.key)
+    .filter(Boolean)
+    .map(normalize);
+
+  const allFormulaVariablesSelected =
+    expectedVariableKeys.length > 0 &&
+    expectedVariableKeys.every((key) => selectedVariableKeys.includes(key));
+
+  const canAddVariable =
+    expectedVariableKeys.length > 0 && !allFormulaVariablesSelected;
+
 
   return (
     <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 1, border: '1px solid #e0e0e0' }}>
@@ -336,9 +361,36 @@ export const IndicatorForm: FC<IndicatorFormProps> = ({ onSubmit, initialIndicat
               Primero escribe la fórmula. Luego, en <Box component="span" fontWeight={600}>Nombre de la variable</Box> ingresa o selecciona desde la ayuda los textos que usaste en la fórmula. En <Box component="span" fontWeight={600}>Descripción</Box> explica qué representa cada variable.
             </Typography>
 
-            <Button size="small" startIcon={<AddIcon />} onClick={handleAddVariable} sx={{ textTransform: 'none', backgroundColor: appColors.blue, '&:hover': { backgroundColor: appColors.blue, opacity: 0.9 }, color: '#fff', whiteSpace: 'nowrap', ml: 2 }} variant="contained">
-              Añadir variable
-            </Button>
+            <Tooltip
+              title={
+                !canAddVariable
+                  ? 'Ya definiste todas las variables usadas en la fórmula'
+                  : ''
+              }
+              arrow
+            >
+              <span>
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddVariable}
+                  disabled={!canAddVariable}
+                  sx={{
+                    textTransform: 'none',
+                    backgroundColor: appColors.blue,
+                    '&:hover': { backgroundColor: appColors.blue, opacity: 0.9 },
+                    color: '#fff',
+                    whiteSpace: 'nowrap',
+                    ml: 2,
+                  }}
+                  variant="contained"
+                >
+                  Añadir variable
+                </Button>
+              </span>
+            </Tooltip>
+
+
           </Stack>
 
           <TableContainer component={Paper} sx={{ boxShadow: 'none', border: `1px solid ${appColors.blue}1A` }}>

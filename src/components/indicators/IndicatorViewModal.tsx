@@ -1,5 +1,22 @@
-import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Paper } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Paper,
+  Stack
+} from '@mui/material';
+
 import { formatNumber, PERIODICITY_CONFIG } from '../../types/indicators';
 import type { Indicator } from '../../types/indicators';
 
@@ -9,183 +26,255 @@ interface Props {
   onClose: () => void;
 }
 
-export const IndicatorViewModal: React.FC<Props> = ({ open, indicator, onClose }) => {
+interface PeriodRowData {
+  variables: Record<string, number>;
+  observations: string;
+  evidence: File | null;
+}
+
+export const IndicatorViewModal: React.FC<Props> = ({
+  open,
+  indicator,
+  onClose
+}) => {
+  /* =========================
+     Hooks (siempre arriba)
+  ========================= */
+
+  const [rowsData, setRowsData] = useState<Record<string, PeriodRowData>>({});
+  const [editingRow, setEditingRow] = useState<string | null>(null);
+
+  /* =========================
+     Configuración de periodicidad
+  ========================= */
+
+  const periodicityConfig = indicator
+    ? PERIODICITY_CONFIG.find(p => p.value === indicator.periodicity)
+    : null;
+
+  const periodsCount = periodicityConfig?.periods ?? 0;
+
+  /* =========================
+     Inicialización de filas
+  ========================= */
+
+  useEffect(() => {
+    if (!indicator || periodsCount === 0) return;
+
+    const initial: Record<string, PeriodRowData> = {};
+
+    for (let i = 0; i < periodsCount; i++) {
+      initial[String(i)] = {
+        variables: indicator.variables.reduce((acc, v) => {
+          acc[v.id] = 0;
+          return acc;
+        }, {} as Record<string, number>),
+        observations: '',
+        evidence: null
+      };
+    }
+
+    setRowsData(initial);
+  }, [indicator, periodsCount]);
+
+  /* =========================
+     Guard clause
+  ========================= */
+
   if (!indicator) return null;
 
-  const periodsCount = (() => {
-    switch (indicator.periodicity) {
-      case 'MENSUAL': return 12;
-      case 'BIMESTRAL': return 6;
-      case 'TRIMESTRAL': return 4;
-      case 'CUATRIMESTRAL': return 3;
-      case 'SEMESTRAL': return 2;
-      case 'ANUAL': return 1;
-      default: return 12;
-    }
-  })();
+  const metaPerPeriod =
+    indicator.annualTarget / (periodicityConfig?.periods ?? 1);
 
-  const periodRows = new Array(periodsCount).fill(null).map((_, i) => {
-       let label = '';
-    switch (indicator.periodicity) {
-      case 'MENSUAL':
-        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        label = meses[i];
-        break;
-      case 'BIMESTRAL':
-        label = `Bimestre ${i + 1}`;
-        break;
-      case 'TRIMESTRAL':
-        label = `Trimestre ${i + 1}`;
-        break;
-      case 'CUATRIMESTRAL':
-        label = `Cuatrimestre ${i + 1}`;
-        break;
-      case 'SEMESTRAL':
-        label = `Semestre ${i + 1}`;
-        break;
-      case 'ANUAL':
-        label = 'Anual';
-        break;
-      default:
-        label = `Período ${i + 1}`;
-    }
-    
-    return {
-      id: String(i),
-      label,
-    };
-  });
+  /* =========================
+     Handlers
+  ========================= */
 
-  const periodicityConfig = PERIODICITY_CONFIG.find(p => p.value === indicator.periodicity);
-  const metaPerPeriod = periodicityConfig ? indicator.annualTarget / periodicityConfig.periods : indicator.annualTarget;
+  const handleVariableChange = (
+    rowId: string,
+    variableId: string,
+    value: string
+  ) => {
+    const num = Number(value);
+
+    setRowsData(prev => ({
+      ...prev,
+      [rowId]: {
+        ...prev[rowId],
+        variables: {
+          ...prev[rowId].variables,
+          [variableId]: Number.isNaN(num) ? 0 : num
+        }
+      }
+    }));
+  };
+
+  const handleObservationChange = (
+    rowId: string,
+    value: string
+  ) => {
+    setRowsData(prev => ({
+      ...prev,
+      [rowId]: {
+        ...prev[rowId],
+        observations: value
+      }
+    }));
+  };
+
+  const handleEvidenceChange = (rowId: string, file: File | null) => {
+    setRowsData(prev => ({
+      ...prev,
+      [rowId]: {
+        ...prev[rowId],
+        evidence: file
+      }
+    }));
+  };
+
+  /* =========================
+     Cálculos
+  ========================= */
+
+  const calculateResult = (row: PeriodRowData): number =>
+    Object.values(row.variables).reduce((sum, val) => sum + val, 0);
+
+  const calculateCompliance = (result: number): number =>
+    metaPerPeriod > 0 ? (result / metaPerPeriod) * 100 : 0;
+
+  /* =========================
+     Render
+  ========================= */
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
-      <DialogTitle sx={{ borderBottom: '1px solid #eee', backgroundColor: '#f7f9fc' }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          {indicator.name}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Frecuencia: {periodicityConfig?.label} · Tendencia: {indicator.trend === 'ASC' ? 'Ascendente' : 'Descendente'}
+      <DialogTitle>
+        <Typography fontWeight={600}>{indicator.name}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Frecuencia: {periodicityConfig?.label}
         </Typography>
       </DialogTitle>
-      
-      <DialogContent sx={{ p: 2.5 }}>
-        <Box sx={{ 
-          mb: 2.5, 
-          p: 2, 
-          borderRadius: 1.5, 
-          backgroundColor: '#e8f1ff',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 1.5
-        }}>
-          <Box>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              Fórmula:{' '}
-              <Typography component="span" variant="body2" sx={{ fontFamily: 'monospace' }}>
-                {indicator.formula}
-              </Typography>
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Meta Anual: <strong>{formatNumber(indicator.annualTarget)} {indicator.unit}</strong>
-            </Typography>
-          </Box>
-        </Box>
 
-        <TableContainer component={Paper} sx={{ 
-          borderRadius: 2, 
-          border: '1px solid #e0e0e0',
-          boxShadow: 'none'
-        }}>
-          <Table size="small" stickyHeader>
+      <DialogContent>
+        <TableContainer component={Paper}>
+          <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, minWidth: 80 }}>Período</TableCell>
+                <TableCell>Período</TableCell>
                 {indicator.variables.map(v => (
-                  <TableCell key={v.id} sx={{ fontWeight: 600 }}>{v.key}</TableCell>
+                  <TableCell key={v.id}>{v.key}</TableCell>
                 ))}
-                <TableCell sx={{ fontWeight: 600 }}>Resultado</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Meta</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Cumplimiento</TableCell>
-                <TableCell sx={{ fontWeight: 600, minWidth: 260 }}>Observaciones de medición</TableCell>
-                <TableCell sx={{ fontWeight: 600, minWidth: 140 }}>Anexo / Evidencia</TableCell>
+                <TableCell>Resultado</TableCell>
+                <TableCell>Meta</TableCell>
+                <TableCell>Cumplimiento</TableCell>
+                <TableCell>Observaciones</TableCell>
+                <TableCell>Anexo</TableCell>
+                <TableCell>Acciones</TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
-              {periodRows.map((r) => (
-                <TableRow key={r.id} hover>
-                  <TableCell>{r.label}</TableCell>
-                  {indicator.variables.map(v => (
-                    <TableCell key={v.id}>
-                      <TextField 
-                        fullWidth 
-                        size="small" 
-                        disabled 
-                        placeholder="-"
-                        sx={{
-                          '& .MuiInputBase-input.Mui-disabled': {
-                            WebkitTextFillColor: '#666',
-                            backgroundColor: '#f5f5f5'
+              {Object.entries(rowsData).map(([rowId, row]) => {
+                const result = calculateResult(row);
+                const compliance = calculateCompliance(result);
+
+                return (
+                  <TableRow key={rowId}>
+                    <TableCell>{Number(rowId) + 1}</TableCell>
+
+                    {indicator.variables.map(v => (
+                      <TableCell key={v.id}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          disabled={editingRow !== rowId}
+                          value={row.variables[v.id]}
+                          onChange={e =>
+                            handleVariableChange(
+                              rowId,
+                              v.id,
+                              e.target.value
+                            )
                           }
-                        }}
+                        />
+                      </TableCell>
+                    ))}
+
+                    <TableCell>{formatNumber(result)}</TableCell>
+                    <TableCell>{formatNumber(metaPerPeriod)}</TableCell>
+                    <TableCell>{formatNumber(compliance)}%</TableCell>
+
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        disabled={editingRow !== rowId}
+                        value={row.observations}
+                        onChange={e =>
+                          handleObservationChange(
+                            rowId,
+                            e.target.value
+                          )
+                        }
                       />
                     </TableCell>
-                  ))}
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">-</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {formatNumber(metaPerPeriod)} {indicator.unit}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">-</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <TextField 
-                      fullWidth 
-                      multiline 
-                      rows={3} 
-                      disabled 
-                      placeholder="Observaciones..."
-                      sx={{
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          WebkitTextFillColor: '#666',
-                          backgroundColor: '#f5f5f5'
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <TextField 
-                      fullWidth 
-                      disabled 
-                      placeholder="URL, código o referencia"
-                      sx={{
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          WebkitTextFillColor: '#666',
-                          backgroundColor: '#f5f5f5'
-                        }
-                      }}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+
+                    <TableCell>
+                      <Button
+                        component="label"
+                        size="small"
+                        disabled={editingRow !== rowId}
+                      >
+                        {row.evidence ? 'Cambiar archivo' : 'Subir archivo'}
+                        <input
+                          type="file"
+                          hidden
+                          onChange={e =>
+                            handleEvidenceChange(
+                              rowId,
+                              e.target.files?.[0] ?? null
+                            )
+                          }
+                        />
+                      </Button>
+                    </TableCell>
+
+                    <TableCell>
+                      {editingRow === rowId ? (
+                        <Stack direction="row" spacing={1}>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => setEditingRow(null)}
+                          >
+                            Guardar
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => setEditingRow(null)}
+                          >
+                            Cancelar
+                          </Button>
+                        </Stack>
+                      ) : (
+                        <Button
+                          size="small"
+                          onClick={() => setEditingRow(rowId)}
+                        >
+                          Editar
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, pb: 2.5 }}>
-        <Button 
-          onClick={onClose} 
-          variant="outlined"
-          sx={{ textTransform: 'none' }}
-        >
-          Cerrar
-        </Button>
+      <DialogActions>
+        <Button onClick={onClose}>Cerrar</Button>
       </DialogActions>
     </Dialog>
   );

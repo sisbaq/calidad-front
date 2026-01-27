@@ -22,7 +22,8 @@ export interface IndicatorPeriodRow {
   values: Record<string, string>;
   result?: number;
   observation: string;
-  evidence: string;
+  evidence: File | null;
+  sent?: boolean;
 }
 
 
@@ -35,6 +36,8 @@ export interface Indicator {
   periodicity: Periodicity;
   trend: Trend;
   realValue: number;
+  active: boolean;
+  processId?: string;
   responsible?: string;
   variables: IndicatorVariable[];
   process?: string;

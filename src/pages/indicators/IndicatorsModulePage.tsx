@@ -44,6 +44,7 @@ export const IndicatorsModulePage: React.FC = () => {
       realValue: 87.5,
       responsible: 'Coordinador de Calidad',
       process: 'Gestión de Calidad',
+      active:true,
       hasData: true,
       lastUpdate: '2024-11-15T10:30:00Z',
       userId: 1,
@@ -63,6 +64,7 @@ export const IndicatorsModulePage: React.FC = () => {
       realValue: 92.3,
       responsible: 'Jefe de Atención al Cliente',
       process: 'Servicio al Cliente',
+      active:true,
       hasData: false,
       lastUpdate: undefined,
       userId: 2,
@@ -82,6 +84,7 @@ export const IndicatorsModulePage: React.FC = () => {
       realValue: 88.0,
       responsible: 'Auditor Interno',
       process: 'Auditoría Interna',
+      active:true,
       hasData: true,
       lastUpdate: '2024-12-01T14:20:00Z',
       userId: 3,
@@ -101,6 +104,7 @@ export const IndicatorsModulePage: React.FC = () => {
       realValue: 78.5,
       responsible: 'Coordinador de Mesa de Ayuda',
       process: 'Soporte Técnico',
+      active:true,
       hasData: true,
       lastUpdate: '2024-11-28T09:15:00Z',
       userId: 1,
@@ -120,6 +124,7 @@ export const IndicatorsModulePage: React.FC = () => {
       realValue: 65.0,
       responsible: 'Gerente de Recursos Humanos',
       process: 'Recursos Humanos',
+      active:true,
       hasData: false,
       lastUpdate: undefined,
       userId: 4,
@@ -149,28 +154,34 @@ export const IndicatorsModulePage: React.FC = () => {
   };
 
   const handleCreateOrUpdate = (indicator: Indicator) => {
-    if (editingIndicator) {
-      setIndicators((prev) =>
-        prev.map((it) =>
-          it.id === indicator.id
-            ? { ...indicator, hasData: it.hasData, lastUpdate: it.lastUpdate }
-            : it,
-        ),
-      );
-    } else {
-      const newIndicator: Indicator = {
-        ...indicator,
-        id: indicator.id ?? createId(),
-        hasData: false,
-        lastUpdate: undefined,
-        userId: userId,
-        process: session?.user?.department || 'Proceso General',
-      };
-      setIndicators((prev) => [...prev, newIndicator]);
-    }
+    setIndicators(prev => {
+      const exists = prev.some(i => i.id === indicator.id);
+
+      if (exists) {
+        return prev.map(i =>
+          i.id === indicator.id
+            ? { ...i, ...indicator }
+            : i
+        );
+      }
+
+      return [
+        ...prev,
+        {
+          ...indicator,
+          id: indicator.id ?? createId(),
+          hasData: false,
+          lastUpdate: undefined,
+          userId: userId,
+          process: session?.user?.department || 'Proceso General',
+        },
+      ];
+    });
+
     setEditingIndicator(null);
     setFormOpen(false);
   };
+
 
   const handleEdit = (indicator: Indicator) => {
     if (indicator.hasData) return;
@@ -206,7 +217,7 @@ export const IndicatorsModulePage: React.FC = () => {
     setViewOpen(true);
   };
 
-  
+
   const handleSaveManage = (rows: IndicatorPeriodRow[]) => {
     void rows;
 
@@ -258,8 +269,8 @@ export const IndicatorsModulePage: React.FC = () => {
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {isAdmin
-              ? 'Visualiza y consulta todos los indicadores de la organización.'
-              : 'Crea y administra los indicadores de calidad de tu organización.'}
+              ? 'Visualiza y consulta todos los indicadores de la entidad.'
+              : 'Crea y gestiona los indicadores de calidad de la entidad.'}
           </Typography>
         </Box>
 

@@ -20,6 +20,8 @@ import MatrixUploadPage from "@/pages/contextOrganization/MatrixUploadPage";
 import MatrixViewPage from "@/pages/contextOrganization/MatrixViewPage";
 import HomePage from "@/pages/home/Home";
 import { IndicatorsModulePage } from "@/pages/indicators/IndicatorsModulePage";
+import { IndicatorConfigurationPage } from "@/pages/indicators/IndicatorConfigurationPage";
+
 const FindingsPage = lazy(() => import("@pages/audit/FindingsPage"));
 const ManageImprovementPlansPage = lazy(
   () => import("@pages/improvement/ManageImprovementPlansPage"),
@@ -126,10 +128,18 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/evaluacion/indicadores-por-desempeno",
+        path: "indicadores-de-gestion",
         element: (
           <Suspense fallback={<CenteredSpinner />}>
             <IndicatorsModulePage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "configuracion-indicadores",
+        element: (
+          <Suspense fallback={<CenteredSpinner />}>
+            <IndicatorConfigurationPage />
           </Suspense>
         ),
       },
