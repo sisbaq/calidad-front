@@ -47,7 +47,6 @@ export const IndicatorsModulePage: React.FC = () => {
 
   const userRole = session?.user?.role || 'Agente de cambio';
   const isAdmin = userRole === 'Administrador';
-  const userProcessId = session?.user?.idProceso;
 
   const [indicators, setIndicators] = useState<Indicator[]>([]);
   const [loading, setLoading] = useState(true);
