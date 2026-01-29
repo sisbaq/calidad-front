@@ -6,7 +6,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import { appColors } from '@/theme/colors';
 import type { Indicator } from '../../types/indicators';
-import { PERIODICITY_CONFIG} from '../../types/indicators';
+import { PERIODICITY_CONFIG } from '../../types/indicators';
 
 interface IndicatorListProps {
   indicators: Indicator[];
@@ -14,51 +14,6 @@ interface IndicatorListProps {
   onEdit: (indicator: Indicator) => void;
   onDelete: (indicator: Indicator) => void;
 }
-
-const getStateFromDates = (lastUpdate: string | undefined, periodicity: Indicator['periodicity']) => {
-  const now = new Date();
-  const addMonthsByPeriod = (p: string) => {
-    switch (p) {
-      case 'MENSUAL':
-        return 1;
-      case 'BIMESTRAL':
-        return 2;
-      case 'TRIMESTRAL':
-        return 3;
-      case 'CUATRIMESTRAL':
-        return 4;
-      case 'SEMESTRAL':
-        return 6;
-      case 'ANUAL':
-        return 12;
-      default:
-        return 1;
-    }
-  };
-
-
-  if (!lastUpdate) {
-    return { label: 'Pendiente', color: '#d32f2f' };
-  }
-
-  const last = new Date(lastUpdate);
-  const monthsToAdd = addMonthsByPeriod(periodicity);
-  const deadline = new Date(last);
-  deadline.setMonth(deadline.getMonth() + monthsToAdd);
-
-  const diffMs = deadline.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays > 7) {
-    return { label: 'Actualizado', color: '#2e7d32' };
-  }
-
-  if (diffDays > 0 && diffDays <= 7) {
-    return { label: 'Próximo a vencer', color: '#f57c00' };
-  }
-
-  return { label: 'Vencido', color: '#d32f2f' };
-};
 
 export const IndicatorList: FC<IndicatorListProps> = ({ indicators, onManage, onEdit, onDelete }) => {
   const total = indicators.length;
@@ -84,7 +39,7 @@ export const IndicatorList: FC<IndicatorListProps> = ({ indicators, onManage, on
 
       {total === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          Aún no has creado indicadores. Usa el botón "Nuevo indicador" para registrar el primero.
+          Aun no has creado indicadores. Usa el boton "Nuevo indicador" para registrar el primero.
         </Typography>
       ) : (
         <TableContainer>
@@ -92,7 +47,6 @@ export const IndicatorList: FC<IndicatorListProps> = ({ indicators, onManage, on
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600 }}>Nombre del Indicador</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Tendencia</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Unidad</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Responsable</TableCell>
@@ -103,27 +57,14 @@ export const IndicatorList: FC<IndicatorListProps> = ({ indicators, onManage, on
             <TableBody>
               {indicators.map((indicator) => {
                 const { label } = getPeriodInfo(indicator);
-                const state = getStateFromDates(indicator.lastUpdate, indicator.periodicity);
-                const disabledActions = indicator.hasData === true;
 
                 return (
                   <TableRow key={indicator.id} hover>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>{indicator.name}</Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                        {label} · Fórmula: <span style={{ fontFamily: 'monospace' }}>{indicator.formula}</span>
+                        {label} · Formula: <span style={{ fontFamily: 'monospace' }}>{indicator.formula}</span>
                       </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
-                        <Box sx={{ width: 10, height: 10, borderRadius: 0.5, backgroundColor: state.color, mr: 1 }} />
-                        <Box sx={{ backgroundColor: state.color + '1A', px: 1, py: 0.5, borderRadius: 0.75 }}>
-                          <Typography variant="caption" sx={{ color: state.color, fontWeight: 700 }}>
-                            {state.label}
-                          </Typography>
-                        </Box>
-                      </Box>
                     </TableCell>
 
                     <TableCell>
@@ -135,25 +76,21 @@ export const IndicatorList: FC<IndicatorListProps> = ({ indicators, onManage, on
                     </TableCell>
 
                     <TableCell>
-                      <Typography variant="body2">{(indicator as any).responsible ?? '-'}</Typography>
+                      <Typography variant="body2">{indicator.responsible ?? '-'}</Typography>
                     </TableCell>
 
                     <TableCell align="center">
                       <Stack direction="row" spacing={1} justifyContent="center">
-                        <Tooltip title={disabledActions ? 'No se puede editar indicador gestionado' : 'Editar indicador'}>
-                          <span>
-                            <IconButton size="small" onClick={() => onEdit(indicator)} disabled={disabledActions}>
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </span>
+                        <Tooltip title="Editar indicador">
+                          <IconButton size="small" onClick={() => onEdit(indicator)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
                         </Tooltip>
 
-                        <Tooltip title={disabledActions ? 'No se puede eliminar indicador gestionado' : 'Eliminar indicador'}>
-                          <span>
-                            <IconButton size="small" onClick={() => onDelete(indicator)} disabled={disabledActions} color="error">
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </span>
+                        <Tooltip title="Eliminar indicador">
+                          <IconButton size="small" onClick={() => onDelete(indicator)} color="error">
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </Tooltip>
                       </Stack>
                     </TableCell>

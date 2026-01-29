@@ -41,9 +41,27 @@ export interface Indicator {
   responsible?: string;
   variables: IndicatorVariable[];
   process?: string;
-  hasData?: boolean;
-  lastUpdate?: string;
   userId?: number;
+}
+
+export interface ApiIndicator {
+  indId: number;
+  indNombre: string;
+  indFormula: string;
+  indVariable_1: string;
+  indVariable_2: string;
+  indExplicacionVar1: string | null;
+  indExplicacionVar2: string | null;
+  indMetaAnual: string;
+  indValorReal: number;
+  indResponsable: string;
+  indCreadoEl: string;
+  indEstado: boolean;
+  fkUnidadMedida: { undId: number; undNombreUnidad: string } | null;
+  fkCreadoPor: { idUsuario: number; nombreCompleto: string } | null;
+  fkFrecuencia: { freId: number; freNombreFrecuencia: string } | null;
+  fkTendencia: { tenId: number; tenNomTendencia: string } | null;
+  fkProceso: { idProceso: number; nombre: string } | null;
 }
 
 
@@ -100,4 +118,60 @@ export interface PeriodRow {
   periodLabel: string;
   value: number | null;
   observation?: string;
+}
+
+// Maximum number of variables supported by the backend
+export const MAX_INDICATOR_VARIABLES = 2;
+
+// API response types for dropdowns
+export interface ApiFrequency {
+  freId: number;
+  freNombreFrecuencia: string;
+  freEstado: boolean;
+}
+
+export interface ApiTrend {
+  tenId: number;
+  tenNomTendencia: string;
+  tenEstado: boolean;
+}
+
+export interface ApiUnit {
+  undId: number;
+  undNombreUnidad: string;
+  undEstado: boolean;
+}
+
+// Frontend option types for dropdowns
+export interface FrequencyOption {
+  id: number;
+  name: string;
+  periods: number;
+}
+
+export interface TrendOption {
+  id: number;
+  name: string;
+}
+
+export interface UnitOption {
+  id: number;
+  name: string;
+}
+
+// Payload type for creating/updating indicators
+export interface IndicatorApiPayload {
+  indNombre: string;
+  indFormula: string;
+  indVariable_1: string;
+  indVariable_2: string;
+  indExplicacionVar1?: string;
+  indExplicacionVar2?: string;
+  indMetaAnual: string;
+  indValorReal: number;
+  indResponsable: string;
+  fkUnidadMedida: number;
+  fkFrecuencia: number;
+  fkTendencia: number;
+  fkProceso: number;
 }
