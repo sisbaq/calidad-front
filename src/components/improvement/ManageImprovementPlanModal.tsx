@@ -32,8 +32,6 @@ type FindingWithPlan = {
     description?: string;
     [k: string]: any;
   }>;
-  // Si la API expone un flag/objeto para saber si el plan fue gestionado,
-  // este componente ya lo usa a través de "hasExistingActivities".
   [k: string]: any;
 };
 
@@ -50,7 +48,6 @@ type ManageImprovementPlanModalProps = {
     estado?: string;
   }) => void;
 };
-
 
 const BLUE = '#142334';
 const GREEN = '#279B48';
@@ -91,11 +88,17 @@ function SectionTitle({
 
 export default function ManageImprovementPlanModal({
   open = false,
-  onClose = () => { },
+  onClose = () => {},
   finding,
-  onSave = () => { },
+  onSave = () => {},
 }: ManageImprovementPlanModalProps) {
   const hasExistingActivities = (finding?.activities?.length ?? 0) > 0;
+
+ const isOportunidadMejora = String(finding?.findingType ?? '')
+  .toLowerCase()
+  .includes('oportunidad');
+
+
   const [analisis, setAnalisis] = useState('');
   const [actividadDraft, setActividadDraft] = useState('');
   const [actividades, setActividades] = useState<string[]>([]);
@@ -131,8 +134,12 @@ export default function ManageImprovementPlanModal({
     setActividadDraft('');
   };
 
-  const requestRemoveActividad = (idx: number) => setConfirmDel({ open: true, idx });
-  const cancelRemoveActividad = () => setConfirmDel({ open: false, idx: -1 });
+  const requestRemoveActividad = (idx: number) =>
+    setConfirmDel({ open: true, idx });
+
+  const cancelRemoveActividad = () =>
+    setConfirmDel({ open: false, idx: -1 });
+
   const confirmRemoveActividad = () => {
     setActividades((prev) => prev.filter((_, i) => i !== confirmDel.idx));
     if (editIndex === confirmDel.idx) {
@@ -146,34 +153,47 @@ export default function ManageImprovementPlanModal({
     setEditIndex(idx);
     setEditValue(value);
   };
+
   const cancelEdit = () => {
     setEditIndex(-1);
     setEditValue('');
   };
+
   const saveEdit = () => {
     if (editIndex < 0) return;
     const v = editValue.trim().replace(/\s+/g, ' ');
     if (!v) return;
-    setActividades((prev) => prev.map((x, i) => (i === editIndex ? v : x)));
+    setActividades((prev) =>
+      prev.map((x, i) => (i === editIndex ? v : x))
+    );
     setEditIndex(-1);
     setEditValue('');
   };
 
-  const analisisOk = useMemo(() => analisis.trim().length > 0, [analisis]);
+  const analisisOk = useMemo(
+    () => (isOportunidadMejora ? true : analisis.trim().length > 0),
+    [analisis, isOportunidadMejora]
+  );
+
   const actividadesOk = useMemo(() => actividades.length > 0, [actividades]);
+
   const fechasOk = useMemo(() => {
     if (!fechaInicio || !fechaFin) return false;
     return fechaInicio <= fechaFin;
   }, [fechaInicio, fechaFin]);
 
   const canSubmit = analisisOk && actividadesOk && fechasOk;
-  const analisisError = triedSave && !analisisOk;
+
+  const analisisError =
+    triedSave && !analisisOk && !isOportunidadMejora;
+
   const actividadesError = triedSave && !actividadesOk;
   const fechasError = triedSave && (!fechaInicio || !fechaFin || !fechasOk);
 
   const handleSave = () => {
     setTriedSave(true);
     if (!canSubmit) return;
+
     onSave({
       id: finding?.id || '',
       analisisCausa: analisis.trim(),
@@ -221,24 +241,43 @@ export default function ManageImprovementPlanModal({
               Este hallazgo ya tiene actividades gestionadas.
             </Typography>
             <Typography variant="body2" sx={{ color: BLUE }}>
-              Si necesitas <strong>añadir más actividades</strong> a este plan, hazlo desde la
-              opción <strong>“Ver”</strong>, directamente en la tabla de actividades.
+              Si necesitas <strong>añadir más actividades</strong> a este plan,
+              hazlo desde la opción <strong>“Ver”</strong>, directamente en la
+              tabla de actividades.
             </Typography>
           </Alert>
         ) : (
           <>
-            <SectionTitle title="Análisis de causa" icon={<DescriptionRoundedIcon />} required />
-            <TextField
-              placeholder="Describe el análisis de causa del hallazgo..."
-              value={analisis}
-              onChange={(e) => setAnalisis(e.target.value)}
-              multiline
-              minRows={4}
-              fullWidth
-              error={analisisError}
-              helperText={analisisError ? 'Debes ingresar el análisis de causa.' : ' '}
+            {!isOportunidadMejora && (
+              <>
+                <SectionTitle
+                  title="Análisis de causa"
+                  icon={<DescriptionRoundedIcon />}
+                  required
+                />
+                <TextField
+                  placeholder="Describe el análisis de causa del hallazgo..."
+                  value={analisis}
+                  onChange={(e) => setAnalisis(e.target.value)}
+                  multiline
+                  minRows={4}
+                  fullWidth
+                  error={analisisError}
+                  helperText={
+                    analisisError
+                      ? 'Debes ingresar el análisis de causa.'
+                      : ' '
+                  }
+                />
+              </>
+            )}
+
+            <SectionTitle
+              title="Actividades de mejoramiento (resumen)"
+              icon={<TaskAltRoundedIcon />}
+              required
             />
-            <SectionTitle title="Actividades de mejoramiento (resumen)" icon={<TaskAltRoundedIcon />} required />
+
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
               <TextField
                 placeholder="Añade una actividad…"
@@ -265,7 +304,9 @@ export default function ManageImprovementPlanModal({
                 p: 1.25,
                 borderRadius: 2,
                 minHeight: 88,
-                bgcolor: actividades.length ? 'background.paper' : 'background.default',
+                bgcolor: actividades.length
+                  ? 'background.paper'
+                  : 'background.default',
                 borderStyle: actividades.length ? 'solid' : 'dashed',
                 borderColor: actividadesError ? 'error.main' : 'divider',
               }}
@@ -274,15 +315,20 @@ export default function ManageImprovementPlanModal({
                 <Box
                   sx={{
                     textAlign: 'center',
-                    color: actividadesError ? 'error.main' : 'text.secondary',
+                    color: actividadesError
+                      ? 'error.main'
+                      : 'text.secondary',
                     py: 3,
                   }}
                 >
                   <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>
-                    {actividadesError ? 'Falta añadir actividades' : 'No hay actividades añadidas'}
+                    {actividadesError
+                      ? 'Falta añadir actividades'
+                      : 'No hay actividades añadidas'}
                   </Typography>
                   <Typography variant="caption">
-                    Agrega una o varias actividades de mejoramiento para este hallazgo.
+                    Agrega una o varias actividades de mejoramiento para este
+                    hallazgo.
                   </Typography>
                 </Box>
               ) : (
@@ -330,7 +376,11 @@ export default function ManageImprovementPlanModal({
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
                           {editing ? (
                             <>
-                              <IconButton size="small" color="primary" onClick={saveEdit}>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={saveEdit}
+                              >
                                 <SaveRoundedIcon fontSize="small" />
                               </IconButton>
                               <IconButton size="small" onClick={cancelEdit}>
@@ -362,6 +412,7 @@ export default function ManageImprovementPlanModal({
                 </Stack>
               )}
             </Paper>
+
             <SectionTitle title="Fechas" icon={<TodayRoundedIcon />} required />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
               <TextField
@@ -372,7 +423,9 @@ export default function ManageImprovementPlanModal({
                 InputLabelProps={{ shrink: true }}
                 fullWidth
                 error={fechasError && !fechaInicio}
-                helperText={fechasError && !fechaInicio ? 'Obligatoria' : ' '}
+                helperText={
+                  fechasError && !fechaInicio ? 'Obligatoria' : ' '
+                }
               />
               <TextField
                 type="date"
@@ -387,7 +440,10 @@ export default function ManageImprovementPlanModal({
             </Stack>
 
             {triedSave && fechaInicio && fechaFin && !fechasOk && (
-              <Chip color="error" label="La fecha de inicio no puede ser mayor que la fecha fin" />
+              <Chip
+                color="error"
+                label="La fecha de inicio no puede ser mayor que la fecha fin"
+              />
             )}
           </>
         )}
@@ -402,7 +458,7 @@ export default function ManageImprovementPlanModal({
           <Button
             variant="contained"
             onClick={onClose}
-            sx={{ fontWeight: 700, bgcolor: BLUE, '&:hover': { bgcolor: '#0e1926' } }}
+            sx={{ fontWeight: 700, bgcolor: BLUE }}
           >
             Entendido
           </Button>
@@ -411,22 +467,28 @@ export default function ManageImprovementPlanModal({
             onClick={handleSave}
             variant="contained"
             disabled={!canSubmit}
-            sx={{ fontWeight: 700, bgcolor: BLUE, '&:hover': { bgcolor: '#0e1926' } }}
+            sx={{ fontWeight: 700, bgcolor: BLUE }}
           >
             Guardar gestión
           </Button>
         )}
       </DialogActions>
+
       <Dialog open={confirmDel.open} onClose={cancelRemoveActividad}>
         <DialogTitle>Eliminar actividad</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            ¿Estás segura(o) de eliminar esta actividad? Esta acción no se puede deshacer.
+            ¿Estás segura(o) de eliminar esta actividad? Esta acción no se puede
+            deshacer.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={cancelRemoveActividad}>Cancelar</Button>
-          <Button onClick={confirmRemoveActividad} color="error" variant="contained">
+          <Button
+            onClick={confirmRemoveActividad}
+            color="error"
+            variant="contained"
+          >
             Eliminar
           </Button>
         </DialogActions>
