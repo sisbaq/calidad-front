@@ -1,4 +1,4 @@
-import { Box, TextField, MenuItem, Paper } from '@mui/material';
+import { Box, Button, TextField, MenuItem, Paper } from '@mui/material';
 import { Grid } from '@mui/material';
 import type { ImprovementPlanFilters } from '@/types/improvement';
 
@@ -6,7 +6,7 @@ import type { ImprovementPlanFilters } from '@/types/improvement';
 type ExtendedFilters = ImprovementPlanFilters & {
   auditType?: string;
   sourceType?: string;
-  noHallazgo?: string;   // NUEVO: No. hallazgo (texto/num)
+  noHallazgo?: string;
 };
 
 interface GlobalSearchProps {
@@ -15,7 +15,6 @@ interface GlobalSearchProps {
   yearOptions?: number[];
   auditTypeOptions?: string[];
   sourceTypeOptions?: string[];
-
   filters: ExtendedFilters;
   onFiltersChange: (filters: ExtendedFilters) => void;
 }
@@ -35,6 +34,17 @@ export default function GlobalSearch({
   const commonSx = { '& .MuiOutlinedInput-root': { borderRadius: 1 } };
   const shrink = { shrink: true } as const;
 
+  const clearFilters = () => {
+    onFiltersChange({
+      tipo: '',
+      estado: '',
+      year: '',
+      auditType: '',
+      sourceType: '',
+      noHallazgo: '',
+    });
+  };
+
   return (
     <Paper sx={{ p: 2, mb: 2, border: '1px solid', borderColor: 'divider' }} variant="outlined">
       <Box>
@@ -51,8 +61,6 @@ export default function GlobalSearch({
               placeholder="Ej. 1024"
             />
           </Grid>
-
-
           <Grid size={{ xs: 12, sm: "auto" }}>
             <TextField
               select
@@ -73,7 +81,6 @@ export default function GlobalSearch({
               ))}
             </TextField>
           </Grid>
-
 
           <Grid size={{ xs: 6, sm: "auto" }}>
             <TextField
@@ -157,6 +164,16 @@ export default function GlobalSearch({
                 </MenuItem>
               ))}
             </TextField>
+          </Grid>
+          <Grid size={{ xs: 12, sm: "auto" }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={clearFilters}
+              sx={{ height: 40 }}
+            >
+              Limpiar filtros
+            </Button>
           </Grid>
         </Grid>
       </Box>

@@ -36,6 +36,7 @@ import FileUploadIcon from "@mui/icons-material/FileUpload";
 import UploadIcon from "@mui/icons-material/Upload";
 import DownloadIcon from "@mui/icons-material/Download";
 import SettingsIcon from '@mui/icons-material/Settings';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 export interface NavItem {
   title: string;
   icon?: ReactNode;
@@ -152,7 +153,7 @@ const ALL_ROUTES: NavItem[] = [
     rolesAllowed: [ROLES.ADMIN],
   },
   {
-    title: "Subir documentos tv",
+    title: "Subir documentos consulta",
     icon: <FileUploadIcon />,
     segment: "subir-documentos-transversales",
     rolesAllowed: [ROLES.ADMIN],
@@ -188,13 +189,18 @@ const ALL_ROUTES: NavItem[] = [
     title: "OPERACIÓN",
     rolesAllowed: [ROLES.ADMIN, ROLES.GESTOR],
   },
+   {
+    title: "Acción de autocontrol",
+    icon: <ChecklistIcon />,
+    segment: "acción-de-autocontrol",
+    rolesAllowed: [ROLES.ADMIN, ROLES.GESTOR],
+  },
     {
     title: "Indicadores de gestión",
     icon: <AnalyticsIcon />,
     segment: "indicadores-de-gestion",
     rolesAllowed: [ROLES.ADMIN, ROLES.GESTOR],
   },
-
   {
     title: "Configurar indicadores",
     icon: <SettingsIcon />,

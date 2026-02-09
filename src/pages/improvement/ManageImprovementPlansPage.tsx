@@ -44,7 +44,11 @@ export default function ManageImprovementPlansPage({
     tipo: '',
     estado: '',
     year: '',
+    auditType: '',
+    sourceType: '',
+    noHallazgo: '',
   });
+
   const [improvementPlans, setImprovementPlans] = useState<ImprovementPlan[]>([]);
   const [selected, setSelected] = useState<FindingWithPlan | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -104,6 +108,16 @@ export default function ManageImprovementPlansPage({
     return Array.from(s);
   }, [rows]);
 
+  const auditTypeOptions = useMemo(() => {
+    const s = new Set(rows.map(r => r.auditType).filter(Boolean));
+    return Array.from(s);
+  }, [rows]);
+
+  const sourceTypeOptions = useMemo(() => {
+    const s = new Set(rows.map(r => r.source).filter(Boolean));
+    return Array.from(s);
+  }, [rows]);
+
   const yearOptions = useMemo(() => {
     const s = new Set(rows.map((r) => getYear(r.date)).filter(Boolean));
     return Array.from(s).sort((a, b) => (b || 0) - (a || 0)) as number[];
@@ -112,13 +126,26 @@ export default function ManageImprovementPlansPage({
   const filteredRows = useMemo(() => {
     return rows
       .filter((r) => !processName || r.auditedProcess.startsWith(processName))
+
+      .filter((r) =>
+        !filters.noHallazgo
+          ? true
+          : String(r.id).includes(filters.noHallazgo)
+      )
+
       .filter((r) => !filters.tipo || r.findingType === filters.tipo)
+
       .filter((r) => !filters.estado || (r.status || 'Abierto') === filters.estado)
+
       .filter((r) => {
         if (!filters.year) return true;
-        const y = getYear(r.date);
+        const y = getYear(r.improvementPlan?.startDate || r.date);
         return Number(filters.year) === y;
-      });
+      })
+
+      .filter((r) => !filters.auditType || r.auditType === filters.auditType)
+
+      .filter((r) => !filters.sourceType || r.source === filters.sourceType);
   }, [rows, filters, processName]);
 
   const handleExpand = async (findingId: string | number) => {
@@ -281,19 +308,19 @@ export default function ManageImprovementPlansPage({
         segKey === 'followup1'
           ? 'followup1Sent'
           : segKey === 'followup2'
-          ? 'followup2Sent'
-          : segKey === 'followup3'
-          ? 'followup3Sent'
-          : 'followup4Sent';
+            ? 'followup2Sent'
+            : segKey === 'followup3'
+              ? 'followup3Sent'
+              : 'followup4Sent';
 
       const followupNum = (
         segKey === 'followup1'
           ? 1
           : segKey === 'followup2'
-          ? 2
-          : segKey === 'followup3'
-          ? 3
-          : 4
+            ? 2
+            : segKey === 'followup3'
+              ? 3
+              : 4
       ) as 1 | 2 | 3 | 4;
 
       const fieldMap: Record<string, string> = {
@@ -400,9 +427,12 @@ export default function ManageImprovementPlansPage({
       <GlobalSearch
         tipoOptions={tipoOptions}
         yearOptions={yearOptions}
+        auditTypeOptions={auditTypeOptions}
+        sourceTypeOptions={sourceTypeOptions}
         filters={filters}
-        onFiltersChange={setFilters}
+        onFiltersChange={(newFilters) => setFilters(newFilters)}
       />
+
 
       <FindingsTableCollapse
         rows={filteredRows}
