@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ChangeEvent, FC } from 'react';
 
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Link,
   Table,
   TableBody,
   TableCell,
@@ -18,14 +20,14 @@ import {
   Tooltip,
   Paper,
   IconButton,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 
 import SendIcon from '@mui/icons-material/Send';
-import { evaluate } from 'mathjs';
 
 import type {
   Indicator,
-  IndicatorVariable,
   IndicatorPeriodRow,
 } from '../../types/indicators';
 
@@ -36,6 +38,7 @@ import {
   getPeriodConfig,
 } from '../../types/indicators';
 
+
 interface IndicatorManageDialogProps {
   open: boolean;
   indicator: Indicator | null;
@@ -43,34 +46,24 @@ interface IndicatorManageDialogProps {
   onSave?: (rows: IndicatorPeriodRow[]) => void;
 }
 
-interface PreparedFormula {
-  expression: string;
-  symbolMap: Record<string, string>;
-}
 
-const escapeRegExp = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isNonNegativeNumber = (value: unknown): boolean => {
+  const num = Number(value);
+  return Number.isFinite(num) && num >= 0;
+};
 
-const prepareFormula = (
-  formula: string,
-  variables: IndicatorVariable[] | undefined,
-): PreparedFormula => {
-  let expression = formula;
-  const symbolMap: Record<string, string> = {};
+const isFilled = (value: unknown): boolean => {
+  return value !== null && value !== undefined && String(value).trim() !== '';
+};
 
-  (variables ?? []).forEach((v, index) => {
-    const displayName = v.key.trim();
-    if (!displayName) return;
-
-    const symbol = `v${index + 1}`;
-    symbolMap[displayName] = symbol;
-
-    const escaped = escapeRegExp(displayName);
-    const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-    expression = expression.replace(regex, symbol);
-  });
-
-  return { expression, symbolMap };
+const canSendBySequence = (
+  rows: IndicatorPeriodRow[],
+  currentIndex: number,
+): boolean => {
+  for (let i = 0; i < currentIndex; i++) {
+    if (!rows[i].sent) return false;
+  }
+  return true;
 };
 
 export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
@@ -83,99 +76,40 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
 
-  const preparedFormula = useMemo<PreparedFormula | null>(() => {
-    if (!indicator) return null;
-    return prepareFormula(indicator.formula, indicator.variables);
-  }, [indicator]);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [fieldErrors, setFieldErrors] = useState<
+    Record<number, { realValue?: string }>
+  >({});
 
   useEffect(() => {
     if (!indicator || !open) {
       setRows([]);
+      setFieldErrors({});
       return;
     }
 
     const { periods } = getPeriodConfig(indicator.periodicity);
-    const metaPerPeriod =
-      periods > 0 ? indicator.annualTarget / periods : indicator.annualTarget;
-
-    const vars = indicator.variables ?? [];
 
     const initialRows: IndicatorPeriodRow[] = Array.from(
       { length: periods },
-      (_, index) => {
-        const values: Record<string, string> = {};
-        vars.forEach((v) => {
-          values[v.key] = '';
-        });
-
-        return {
-          index: index + 1,
-          label: `${index + 1}`,
-          meta: metaPerPeriod,
-          values,
-          result: undefined,
-          observation: '',
-          evidence: null,
-          sent: false,
-        };
-      },
+      (_, index) => ({
+        index: index + 1,
+        label: `${index + 1}`,
+        meta: null,
+        realValue: '',
+        managementDate: '',
+        possibleDate: '',
+        observation: '',
+        evidence: null,
+        sent: false,
+      }),
     );
 
     setRows(initialRows);
   }, [indicator, open]);
 
-  const handleChangeValue =
-    (rowIndex: number, variableKey: string) =>
-      (event: ChangeEvent<HTMLInputElement>) => {
-        const newValue = event.target.value;
-
-        setRows((prev) => {
-          if (!indicator || !preparedFormula) return prev;
-
-          const updated = [...prev];
-          const currentRow = updated[rowIndex];
-          if (currentRow.sent) return prev;
-
-          const newValues = {
-            ...currentRow.values,
-            [variableKey]: newValue,
-          };
-
-          const scope: Record<string, number> = {};
-          const vars = indicator.variables ?? [];
-
-          vars.forEach((v) => {
-            const displayName = v.key.trim();
-            const safeSymbol = preparedFormula.symbolMap[displayName];
-            if (!safeSymbol) return;
-
-            const rawVal = newValues[displayName];
-            const numeric = Number(rawVal);
-            scope[safeSymbol] = Number.isFinite(numeric) ? numeric : 0;
-          });
-
-          let result: number | undefined;
-          try {
-            const evaluated = evaluate(
-              preparedFormula.expression,
-              scope,
-            ) as unknown;
-            if (typeof evaluated === 'number' && Number.isFinite(evaluated)) {
-              result = evaluated;
-            }
-          } catch {
-            result = undefined;
-          }
-
-          updated[rowIndex] = {
-            ...currentRow,
-            values: newValues,
-            result,
-          };
-
-          return updated;
-        });
-      };
 
   const handleChangeObservation =
     (rowIndex: number) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -183,10 +117,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
       setRows((prev) => {
         const updated = [...prev];
         if (updated[rowIndex].sent) return prev;
-        updated[rowIndex] = {
-          ...updated[rowIndex],
-          observation: value,
-        };
+        updated[rowIndex].observation = value;
         return updated;
       });
     };
@@ -194,51 +125,71 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
   const handleChangeEvidence =
     (rowIndex: number) => (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0] ?? null;
-
       setRows((prev) => {
         const updated = [...prev];
         if (updated[rowIndex].sent) return prev;
-        updated[rowIndex] = {
-          ...updated[rowIndex],
-          evidence: file,
-        };
+        updated[rowIndex].evidence = file;
         return updated;
       });
     };
 
+  const isRowValidToSend = (
+    row: IndicatorPeriodRow,
+    rowIndex: number,
+  ): boolean => {
+    // Secuencia obligatoria
+    if (!canSendBySequence(rows, rowIndex)) return false;
+
+    // Errores visibles en campos
+    if (fieldErrors[rowIndex]) return false;
+
+    // Campos obligatorios diligenciados
+    if (
+      !isFilled(row.realValue) ||
+      !isFilled(row.managementDate) ||
+      !isFilled(row.observation)
+    ) {
+      return false;
+    }
+    if (
+      !isNonNegativeNumber(row.realValue)
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSendRow = () => {
     if (selectedRowIndex === null) return;
 
+    const row = rows[selectedRowIndex];
+
+    if (!canSendBySequence(rows, selectedRowIndex)) {
+      setErrorMessage(
+        'Debe enviar los seguimientos de los períodos anteriores antes de continuar.',
+      );
+      setConfirmOpen(false);
+      return;
+    }
+
+    if (!isRowValidToSend(row, selectedRowIndex)) {
+      setErrorMessage(
+        'Debe diligenciar todos los campos obligatorios del período antes de enviar.',
+      );
+      setConfirmOpen(false);
+      return;
+    }
+
     setRows((prev) => {
       const updated = [...prev];
-      updated[selectedRowIndex] = {
-        ...updated[selectedRowIndex],
-        sent: true,
-      };
+      updated[selectedRowIndex].sent = true;
       return updated;
     });
 
     setConfirmOpen(false);
     setSelectedRowIndex(null);
-  };
-
-  const handleSave = () => {
-    onSave?.(rows);
-    onClose();
-  };
-
-  const isRowValidToSend = (row: IndicatorPeriodRow): boolean => {
-    const variablesFilled = Object.values(row.values).every(
-      (v) => v !== '' && v !== null && v !== undefined,
-    );
-
-    const hasValidResult =
-      typeof row.result === 'number' && Number.isFinite(row.result);
-
-    const hasObservation =
-      row.observation.trim().length > 0;
-
-    return variablesFilled && hasValidResult && hasObservation;
+    setSuccessOpen(true);
   };
 
 
@@ -252,17 +203,17 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
 
   return (
     <>
-      <Dialog
-        fullWidth
-        maxWidth="xl"
-        open={open}
-        onClose={onClose}
-        scroll="paper"
-      >
+      <Dialog fullWidth maxWidth="xl" open={open} onClose={onClose}>
         <DialogTitle sx={{ borderBottom: '1px solid #eee' }}>
           {indicator && (
             <>
-              <Typography variant="h6">{indicator.name}</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                <Typography variant="h6">{indicator.name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <span style={{ fontWeight: 700 }}>Fórmula:</span>{' '}
+                  {indicator.formula}
+                </Typography>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Frecuencia: {periodicidadLabel} · Tendencia: {tendenciaLabel}
               </Typography>
@@ -276,26 +227,26 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
               <TableHead>
                 <TableRow>
                   <TableCell>Período</TableCell>
-                  {(indicator?.variables ?? []).map((v) => (
-                    <TableCell key={v.key}>{v.key}</TableCell>
-                  ))}
-                  <TableCell>Resultado</TableCell>
+                  <TableCell>Valor real</TableCell>
                   <TableCell>Meta</TableCell>
-                  <TableCell>Cumplimiento</TableCell>
+                  <TableCell>Tolerancia</TableCell>
+                  <TableCell>Fecha de gestión</TableCell>
                   <TableCell>Observaciones</TableCell>
                   <TableCell>Evidencia</TableCell>
+                  <TableCell>Acciones de control</TableCell>
                   <TableCell>Acciones</TableCell>
                 </TableRow>
               </TableHead>
 
               <TableBody>
                 {rows.map((row, rowIndex) => {
-                  const compliance =
-                    row.result && row.meta > 0
-                      ? (row.result / row.meta) * 100
-                      : undefined;
-
-                  const canSend = isRowValidToSend(row);
+                  const canSend = isRowValidToSend(row, rowIndex);
+                  const showControlActions =
+                    indicator?.tolerance !== undefined &&
+                    row.meta !== null &&
+                    row.meta < indicator.tolerance &&
+                    rowIndex === rows.length - 1 &&
+                    row.sent === true;
 
                   return (
                     <TableRow
@@ -307,36 +258,84 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
                     >
                       <TableCell>{row.label}</TableCell>
 
-                      {(indicator?.variables ?? []).map((v) => (
-                        <TableCell key={v.key}>
-                          <TextField
-                            size="small"
-                            type="number"
-                            fullWidth
-                            disabled={row.sent}
-                            value={row.values[v.key] ?? ''}
-                            onChange={handleChangeValue(rowIndex, v.key)}
-                          />
-                        </TableCell>
-                      ))}
+                      <TableCell sx={{ width: 120 }}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          fullWidth
+                          disabled={row.sent}
+                          value={row.realValue}
+                          error={Boolean(fieldErrors[rowIndex]?.realValue)}
+                          helperText={fieldErrors[rowIndex]?.realValue}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const num = Number(value);
+
+                            setRows((prev) => {
+                              const updated = [...prev];
+                              updated[rowIndex].realValue = value;
+                              return updated;
+                            });
+
+                            setFieldErrors((prev) => {
+                              const updated = { ...prev };
+                              if (num < 0) {
+                                updated[rowIndex] = {
+                                  ...updated[rowIndex],
+                                  realValue:
+                                    'El valor real no puede ser negativo',
+                                };
+                              } else {
+                                delete updated[rowIndex]?.realValue;
+                                if (
+                                  updated[rowIndex] &&
+                                  Object.keys(updated[rowIndex]).length === 0
+                                ) {
+                                  delete updated[rowIndex];
+                                }
+                              }
+                              return updated;
+                            });
+                          }}
+                        />
+                      </TableCell>
 
                       <TableCell>
-                        {row.result
-                          ? `${formatNumber(row.result)} ${indicator?.unit}`
+                        {row.meta !== null ? (
+                          <>
+                            {formatNumber(row.meta)} {indicator?.unit}
+                          </>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+
+                      <TableCell>
+                        {indicator?.tolerance !== undefined
+                          ? `${formatNumber(indicator.tolerance)}%`
                           : '-'}
                       </TableCell>
 
                       <TableCell>
-                        {formatNumber(row.meta)} {indicator?.unit}
+                        <TextField
+                          size="small"
+                          type="date"
+                          fullWidth
+                          disabled={row.sent}
+                          value={row.managementDate}
+                          onChange={(e) => {
+                            const value = e.target.value;
+
+                            setRows((prev) => {
+                              const updated = [...prev];
+                              updated[rowIndex].managementDate = value;
+                              return updated;
+                            });
+                          }}
+                        />
                       </TableCell>
 
-                      <TableCell>
-                        {compliance !== undefined
-                          ? `${formatNumber(compliance.toFixed(0))}%`
-                          : '-'}
-                      </TableCell>
-
-                      <TableCell>
+                      <TableCell sx={{ width: '30%' }}>
                         <TextField
                           size="small"
                           multiline
@@ -367,15 +366,31 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell>
 
+                      <TableCell>
+                        {showControlActions ? (
+                          <Link
+                            href="#"
+                            underline="always"
+                            onClick={(event) => event.preventDefault()}
+                          >
+                            Acciones de control
+                          </Link>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+
+                      <TableCell>
                         <Tooltip
                           title={
                             row.sent
                               ? 'Registro ya enviado'
-                              : !canSend
-                                ? 'Debe completar todos los campos obligatorios antes de enviar'
-                                : 'Enviar registro'
+                              : !canSendBySequence(rows, rowIndex)
+                                ? 'Debe diligenciar el período anterior'
+                                : !canSend
+                                  ? 'Debe completar los campos correctamente'
+                                  : 'Enviar seguimiento'
                           }
                         >
                           <span>
@@ -390,7 +405,6 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
                             </IconButton>
                           </span>
                         </Tooltip>
-
                       </TableCell>
                     </TableRow>
                   );
@@ -402,19 +416,15 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
 
         <DialogActions>
           <Button onClick={onClose}>Cerrar</Button>
-          <Button variant="contained" onClick={handleSave}>
-            Guardar cambios
-          </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Confirm Send Dialog */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <DialogTitle>Confirmar envío</DialogTitle>
         <DialogContent>
           <Typography>
-            ¿Está seguro que desea enviar este registro? Una vez enviado no podrá
-            editarlo.
+            ¿Está seguro que desea enviar este seguimiento? Una vez enviado no
+            podrá editarlo.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -424,6 +434,24 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={successOpen}
+        autoHideDuration={3000}
+        onClose={() => setSuccessOpen(false)}
+      >
+        <Alert severity="success">
+          Seguimiento enviado con éxito
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={Boolean(errorMessage)}
+        autoHideDuration={4000}
+        onClose={() => setErrorMessage(null)}
+      >
+        <Alert severity="error">{errorMessage}</Alert>
+      </Snackbar>
     </>
   );
 };

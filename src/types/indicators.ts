@@ -18,9 +18,13 @@ export interface IndicatorVariable {
 export interface IndicatorPeriodRow {
   index: number;
   label: string;
-  meta: number;
+  meta: number | null;
   values: Record<string, string>;
   result?: number;
+  realValue?: string;
+  compliance?: string;
+  managementDate?: string;
+  possibleDate?: string;
   observation: string;
   evidence: File | null;
   sent?: boolean;
@@ -33,9 +37,9 @@ export interface Indicator {
   formula: string;
   unit: string;
   annualTarget: number;
+  tolerance?: number;
   periodicity: Periodicity;
   trend: Trend;
-  realValue: number;
   active: boolean;
   processId?: string;
   responsible?: string;

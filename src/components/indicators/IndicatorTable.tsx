@@ -92,10 +92,10 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                 </Typography>
 
                 {role === 'ADMIN' && (
-                    <Box sx={{ 
-                        mb: 2, 
-                        p: 2, 
-                        backgroundColor: '#f8f9fa', 
+                    <Box sx={{
+                        mb: 2,
+                        p: 2,
+                        backgroundColor: '#f8f9fa',
                         borderRadius: 1,
                         border: '1px solid #e0e0e0'
                     }}>
@@ -105,8 +105,8 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                         <Stack direction="row" spacing={2} alignItems="center">
                             <FormControl size="small" sx={{ minWidth: 200 }}>
                                 <InputLabel>Proceso</InputLabel>
-                                <Select 
-                                    value={filterProcess} 
+                                <Select
+                                    value={filterProcess}
                                     label="Proceso"
                                     onChange={(e) => { setFilterProcess(e.target.value); setPage(0); }}
                                     sx={{ backgroundColor: 'white' }}
@@ -116,15 +116,15 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                                 </Select>
                             </FormControl>
 
-                            <Button 
-                                variant="outlined" 
+                            <Button
+                                variant="outlined"
                                 size="small"
                                 onClick={() => {
                                     setFilterProcess('ALL');
                                     setTextSearch('');
                                     setPage(0);
                                 }}
-                                sx={{ 
+                                sx={{
                                     textTransform: 'none',
                                     minWidth: 100,
                                     borderColor: '#d0d0d0',
@@ -138,10 +138,10 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                 )}
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <TextField 
-                        size="small" 
-                        placeholder="Buscar..." 
-                        value={textSearch} 
+                    <TextField
+                        size="small"
+                        placeholder="Buscar..."
+                        value={textSearch}
                         onChange={(e) => { setTextSearch(e.target.value); setPage(0); }}
                         sx={{ minWidth: 250 }}
                     />
@@ -153,6 +153,7 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{ fontWeight: 600 }}>Nombre del Indicador</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Estado</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Tendencia</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Unidad</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Responsable</TableCell>
@@ -165,7 +166,7 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                     <TableBody>
                         {visibleRows.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={role === 'ADMIN' ? 7 : 6} align="center">
+                                <TableCell colSpan={role === 'ADMIN' ? 8 : 7} align="center">
                                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                                         No se encontraron indicadores
                                     </Typography>
@@ -173,12 +174,21 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                             </TableRow>
                         ) : (
                             visibleRows.map((indicator) => {
+                                const hasSentTracking = indicator.periods?.some(
+                                    (p) => p.sent === true
+                                );
                                 return (
                                     <TableRow key={indicator.id} hover>
                                         <TableCell>
                                             <Typography variant="body2" sx={{ fontWeight: 600 }}>{indicator.name}</Typography>
                                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                                                 {PERIODICITY_CONFIG.find(p => p.value === indicator.periodicity)?.label} · Fórmula: <span style={{ fontFamily: 'monospace' }}>{indicator.formula}</span>
+                                            </Typography>
+                                        </TableCell>
+
+                                        <TableCell>
+                                            <Typography variant="body2">
+                                                {indicator.active ? 'Activo' : 'Inactivo'}
                                             </Typography>
                                         </TableCell>
 
@@ -190,16 +200,41 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
 
                                         <TableCell align="center">
                                             <Stack direction="row" spacing={1} justifyContent="center">
-                                                <Tooltip title="Editar indicador">
-                                                    <IconButton size="small" onClick={() => onEdit(indicator)}>
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
 
-                                                <Tooltip title="Eliminar indicador">
-                                                    <IconButton size="small" onClick={() => onDelete(indicator)} color="error">
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
+                                                <Tooltip
+                                                    title={
+                                                        hasSentTracking
+                                                            ? 'Este indicador tiene seguimientos enviados y no puede editarse'
+                                                            : 'Editar indicador'
+                                                    }
+                                                >
+                                                    <span>
+                                                        <IconButton
+                                                            size="small"
+                                                            disabled={hasSentTracking}
+                                                            onClick={() => onEdit(indicator)}
+                                                        >
+                                                            <EditIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+                                                <Tooltip
+                                                    title={
+                                                        hasSentTracking
+                                                            ? 'No se puede eliminar un indicador con seguimientos enviados'
+                                                            : 'Eliminar indicador'
+                                                    }
+                                                >
+                                                    <span>
+                                                        <IconButton
+                                                            size="small"
+                                                            color="error"
+                                                            disabled={hasSentTracking}
+                                                            onClick={() => onDelete(indicator)}
+                                                        >
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </span>
                                                 </Tooltip>
                                             </Stack>
                                         </TableCell>
@@ -210,9 +245,31 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                                                     Ver
                                                 </Button>
                                             ) : (
-                                                <Button variant="outlined" size="small" startIcon={<VisibilityIcon />} sx={{ textTransform: 'none', borderColor: appColors.blue, color: appColors.blue }} onClick={() => onManage(indicator)}>
-                                                    Gestionar
-                                                </Button>
+                                                <Tooltip
+                                                    title={
+                                                        hasSentTracking
+                                                            ? 'Este indicador ya tiene seguimientos enviados'
+                                                            : 'Gestionar indicador'
+                                                    }
+                                                >
+                                                    <span>
+                                                        <Button
+                                                            variant="outlined"
+                                                            size="small"
+                                                            startIcon={<VisibilityIcon />}
+                                                            disabled={hasSentTracking}
+                                                            sx={{
+                                                                textTransform: 'none',
+                                                                borderColor: appColors.blue,
+                                                                color: appColors.blue,
+                                                            }}
+                                                            onClick={() => onManage(indicator)}
+                                                        >
+                                                            Gestionar
+                                                        </Button>
+                                                    </span>
+                                                </Tooltip>
+
                                             )}
                                         </TableCell>
                                     </TableRow>
