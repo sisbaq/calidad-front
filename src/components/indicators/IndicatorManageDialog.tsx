@@ -37,6 +37,7 @@ import {
   formatNumber,
   getPeriodConfig,
 } from '../../types/indicators';
+import { useNavigate } from 'react-router-dom';
 
 
 interface IndicatorManageDialogProps {
@@ -71,6 +72,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
   indicator,
   onClose,
 }) => {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<IndicatorPeriodRow[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
@@ -200,6 +202,18 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
   const tendenciaLabel =
     indicator &&
     TREND_OPTIONS.find((t) => t.value === indicator.trend)?.label;
+
+  const handleGoToImprovementPlan = () => {
+    onClose();
+    navigate('/accion-de-autocontrol', {
+      state: {
+        autoSelectTipoId: 1,
+        fromModule: 'indicators',
+        indicatorId: indicator?.id,
+        indicatorName: indicator?.name,
+      },
+    });
+  };
 
   return (
     <>
@@ -372,7 +386,10 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
                           <Link
                             href="#"
                             underline="always"
-                            onClick={(event) => event.preventDefault()}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              handleGoToImprovementPlan();
+                            }}
                           >
                             Acciones de control
                           </Link>

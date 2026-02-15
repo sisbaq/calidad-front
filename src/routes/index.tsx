@@ -21,6 +21,7 @@ import MatrixViewPage from "@/pages/contextOrganization/MatrixViewPage";
 import HomePage from "@/pages/home/Home";
 import { IndicatorsModulePage } from "@/pages/indicators/IndicatorsModulePage";
 import { IndicatorConfigurationPage } from "@/pages/indicators/IndicatorConfigurationPage";
+import AutoControlActionsPage from "@/pages/improvement/AutoControlActionsPage";
 
 const FindingsPage = lazy(() => import("@pages/audit/FindingsPage"));
 const ManageImprovementPlansPage = lazy(
@@ -124,6 +125,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<CenteredSpinner />}>
             <DocumentsAdminPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "accion-de-autocontrol",
+        element: (
+          <Suspense fallback={<CenteredSpinner />}>
+            <AutoControlActionsPage />
           </Suspense>
         ),
       },

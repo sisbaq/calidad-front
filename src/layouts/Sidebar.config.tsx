@@ -192,7 +192,7 @@ const ALL_ROUTES: NavItem[] = [
    {
     title: "Acción de autocontrol",
     icon: <ChecklistIcon />,
-    segment: "acción-de-autocontrol",
+    segment: "accion-de-autocontrol",
     rolesAllowed: [ROLES.ADMIN, ROLES.GESTOR],
   },
     {

@@ -46,6 +46,8 @@ interface ActivityRowProps {
   }) => void;
 
   onOpenObservations?: (comments: FollowupComments) => void;
+  hideObservations?: boolean;
+  hideFollowupStatus?: boolean;
 }
 
 export default function ActivityRow({
@@ -58,6 +60,8 @@ export default function ActivityRow({
   onSendSeg,
   onDeleteSeg,
   onOpenObservations = () => {},
+  hideObservations = false,
+  hideFollowupStatus = false,
 }: ActivityRowProps) {
   const toNum = (obj: Record<number, unknown> = {}): Record<number, string> => ({
     1: (obj[1] ?? '') as string,
@@ -133,11 +137,13 @@ export default function ActivityRow({
         </TableCell>
 
         <TableCell align="right" sx={{ width: 160 }}>
-          <Tooltip title="Ver observaciones">
-            <IconButton size="small" onClick={() => onOpenObservations(followupComments)}>
-              <InfoOutlinedIcon />
-            </IconButton>
-          </Tooltip>
+          {!hideObservations && (
+            <Tooltip title="Ver observaciones">
+              <IconButton size="small" onClick={() => onOpenObservations(followupComments)}>
+                <InfoOutlinedIcon />
+              </IconButton>
+            </Tooltip>
+          )}
         </TableCell>
       </TableRow>
 
@@ -173,6 +179,7 @@ export default function ActivityRow({
                   const segKey = idxToSegKey(idx as FollowupIndex);
                   onDeleteSeg?.({ findingId, activityId: activity.id, segKey });
                 }}
+                hideStatusInFollowup={hideFollowupStatus}
               />
             </Box>
           </Collapse>

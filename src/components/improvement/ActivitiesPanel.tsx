@@ -44,6 +44,8 @@ interface ActivitiesPanelProps {
   }) => void;
   /** (opcional) callback para el botón Añadir actividad */
   onAddActivity?: (findingId: string | number, activity: string) => void;
+  hideObservations?: boolean;
+  hideFollowupStatus?: boolean;
 }
 
 const BLUE = '#142334';
@@ -54,6 +56,8 @@ export default function ActivitiesPanel({
   onSendSeg = () => { },
   onDeleteSeg = () => { },
   onAddActivity = () => { },
+  hideObservations = false,
+  hideFollowupStatus = false,
 }: ActivitiesPanelProps) {
   if (!finding) return null;
   const activities = Array.isArray(finding.activities) ? finding.activities : [];
@@ -202,6 +206,8 @@ export default function ActivitiesPanel({
                       onSendSeg={openSend}
                       onDeleteSeg={onDeleteSeg}
                       onOpenObservations={(comments) => handleOpenObs(comments)}
+                      hideObservations={hideObservations}
+                      hideFollowupStatus={hideFollowupStatus}
                     />
                   );
                 })
@@ -232,11 +238,13 @@ export default function ActivitiesPanel({
         onConfirm={doSend}
       />
 
-      <ActivityObservationsDialog
-        open={obsOpen}
-        comments={obsComments}
-        onClose={handleCloseObs}
-      />
+      {!hideObservations && (
+        <ActivityObservationsDialog
+          open={obsOpen}
+          comments={obsComments}
+          onClose={handleCloseObs}
+        />
+      )}
 
       <AddActivityModal
         open={addModalOpen}

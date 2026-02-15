@@ -122,9 +122,18 @@ export default function DashboardLayout() {
           >
             <MenuIcon />
           </IconButton>
-          <img src={logoAlcaldia} alt="Alcaldía de Barranquilla" style={{ height: '40px' }} />
+          <img
+            src={logoAlcaldia}
+            alt="Alcaldía de Barranquilla"
+            style={{ maxHeight: '40px', width: 'auto', objectFit: 'contain' }}
+          />
           <Box sx={{ flexGrow: 1 }} />
           <Stack direction="row" spacing={2} alignItems="center">
+            <img
+              src={logoSigbaq}
+              alt="Sigbaq Logo"
+              style={{ height: '56px', width: 'auto', objectFit: 'contain' }}
+            />
             <AccountPopover />
           </Stack>
         </Toolbar>
@@ -143,9 +152,6 @@ export default function DashboardLayout() {
                 <SidebarNavItem key={item.title} item={item} open={open} />
               ))}
             </List>
-          </Box>
-          <Box sx={{ p: 2, textAlign: 'center' }}>
-            <img src={logoSigbaq} alt="Sigbaq Logo" style={{ width: open ? '100px' : '40px', transition: 'width 0.2s' }} />
           </Box>
         </Box>
       </Drawer>
@@ -183,7 +189,7 @@ const SidebarNavItem = ({ item, open }: { item: NavItem, open: boolean }) => {
       }}>
         {item.title}
       </ListSubheader>
-    ) : null; // Don't show anything when collapsed
+    ) : null; 
   }
 
   if (item.children) {

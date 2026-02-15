@@ -9,7 +9,6 @@ import {
   Chip,
   Typography,
 } from '@mui/material';
-import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import FileAttachment from '@components/common/FileAttachment';
 import ConfirmDialog from '@components/common/ConfirmDialog';
@@ -21,6 +20,7 @@ interface FollowupItemProps {
   value: string;
   baseValue: string;
   sent: boolean;
+  showStatus?: boolean;
   fileObj: FileAttachmentType | File | null;
   isClosed?: boolean;
   onChange: (value: string) => void;
@@ -28,7 +28,6 @@ interface FollowupItemProps {
   onClearFile: () => void;
   onPreviewFile: () => void;
   onSave: () => void;
-  onSend: () => void;
   onDelete: () => void;
 }
 
@@ -40,6 +39,7 @@ export default function FollowupItem({
   value,
   baseValue,
   sent,
+  showStatus = true,
   fileObj,
   isClosed = false,
   onChange,
@@ -47,7 +47,6 @@ export default function FollowupItem({
   onClearFile,
   onPreviewFile,
   onSave,
-  onSend,
   onDelete,
 }: FollowupItemProps) {
   // Si está enviado o la actividad está cerrada, se bloquea edición.
@@ -92,14 +91,16 @@ export default function FollowupItem({
         </TableCell>
 
         {/* Estado */}
-        <TableCell sx={{ width: 120, verticalAlign: 'top', pt: 3 }}>
-          <Chip
-            size="small"
-            color={sent ? 'success' : hasChanges ? 'warning' : 'default'}
-            label={sent ? 'enviado' : hasChanges ? 'borrador' : 'guardado'}
-            variant={sent ? 'filled' : 'outlined'}
-          />
-        </TableCell>
+        {showStatus && (
+          <TableCell sx={{ width: 120, verticalAlign: 'top', pt: 3 }}>
+            <Chip
+              size="small"
+              color={sent ? 'success' : hasChanges ? 'warning' : 'default'}
+              label={sent ? 'enviado' : hasChanges ? 'borrador' : 'guardado'}
+              variant={sent ? 'filled' : 'outlined'}
+            />
+          </TableCell>
+        )}
 
         {/* Acciones (sin botón Editar) */}
         <TableCell align="right" sx={{ width: 180, verticalAlign: 'top', pt: 3 }}>
@@ -122,15 +123,6 @@ export default function FollowupItem({
                   <Typography variant="caption" sx={{ fontWeight: 700 }}>
                     Guardar
                   </Typography>
-                </IconButton>
-              </span>
-            </Tooltip>
-
-            {/* Enviar (bloquea edición) */}
-            <Tooltip title="Enviar (bloquea edición)">
-              <span>
-                <IconButton size="small" onClick={onSend} disabled={disabled}>
-                  <SendRoundedIcon fontSize="small" />
                 </IconButton>
               </span>
             </Tooltip>

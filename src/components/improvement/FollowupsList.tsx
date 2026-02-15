@@ -39,6 +39,7 @@ interface FollowupsListProps {
   onSave: (idx: number, value: string) => void;
   onSend: (idx: number, value: string) => void;
   onDelete?: (idx: number) => void;
+  hideStatusInFollowup?: boolean;
 }
 
 const BLUE = '#142334';
@@ -52,8 +53,9 @@ export default function FollowupsList({
   setFiles,
   sentFlags,
   onSave,
-  onSend,
+  onSend: _onSend,
   onDelete,
+  hideStatusInFollowup = false,
 }: FollowupsListProps) {
   const isClosed = activity.closed === true;
 
@@ -171,7 +173,9 @@ export default function FollowupsList({
           <TableRow>
             <TableCell sx={{ fontWeight: 700 }}>Descripción</TableCell>
             <TableCell sx={{ fontWeight: 700, width: 200 }}>Archivo</TableCell>
-            <TableCell sx={{ fontWeight: 700, width: 120 }}>Estado</TableCell>
+            {!hideStatusInFollowup && (
+              <TableCell sx={{ fontWeight: 700, width: 120 }}>Estado</TableCell>
+            )}
             <TableCell sx={{ fontWeight: 700, width: 180 }} align="right">
               Acciones
             </TableCell>
@@ -201,10 +205,6 @@ export default function FollowupsList({
               if (isClosed) return showClosedInfo();
               return onSave(i, value);
             };
-            const onSendSafe = () => {
-              if (isClosed) return showClosedInfo();
-              return onSend(i, value);
-            };
             const onDeleteSafe = () => {
               if (isClosed) return showClosedInfo();
               if (sent) return;
@@ -220,6 +220,7 @@ export default function FollowupsList({
                 value={value}
                 baseValue={baseValue}
                 sent={sent}
+                showStatus={!hideStatusInFollowup}
                 fileObj={fileObj}
                 isClosed={isClosed}
                 onChange={onChangeSafe}
@@ -227,7 +228,6 @@ export default function FollowupsList({
                 onClearFile={onClearFileSafe}
                 onPreviewFile={() => openPreviewSmart(fileObj, i)}
                 onSave={onSaveSafe}
-                onSend={onSendSafe}
                 onDelete={onDeleteSafe}
               />
             );
