@@ -71,7 +71,7 @@ const AppBar = styled(MuiAppBar, {
   backgroundColor: 'white',
   color: theme.palette.text.primary,
   elevation: 0,
-  borderBottom: `1px solid ${theme.palette.divider}`,
+  borderBottom: '5px solid #279B48',
 }));
 
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
@@ -201,7 +201,7 @@ const SidebarNavItem = ({ item, open }: { item: NavItem, open: boolean }) => {
             minWidth: 0, 
             mr: open ? 3 : 'auto', 
             justifyContent: 'center',
-            color: 'inherit'
+            color: '#279B48'
           }}>
             {item.icon}
           </ListItemIcon>
@@ -231,9 +231,9 @@ const SidebarNavItem = ({ item, open }: { item: NavItem, open: boolean }) => {
                   pr: 2.5,
                   '&.active': {
                     backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                    color: 'primary.main',
+                    color: '#279B48',
                     '& .MuiListItemIcon-root': {
-                      color: 'primary.main',
+                      color: '#279B48',
                     },
                   },
                   '&:hover': {
@@ -245,7 +245,7 @@ const SidebarNavItem = ({ item, open }: { item: NavItem, open: boolean }) => {
                   minWidth: 0, 
                   mr: 3, 
                   justifyContent: 'center',
-                  color: 'inherit'
+                  color: '#279B48'
                 }}>
                   {child.icon}
                 </ListItemIcon>
@@ -279,9 +279,9 @@ const SidebarNavItem = ({ item, open }: { item: NavItem, open: boolean }) => {
         px: 2.5,
         '&.active': {
           backgroundColor: 'rgba(25, 118, 210, 0.08)',
-          color: 'primary.main',
+          color: '#279B48',
           '& .MuiListItemIcon-root': {
-            color: 'primary.main',
+            color: '#279B48',
           },
         },
         '&:hover': {
@@ -293,7 +293,7 @@ const SidebarNavItem = ({ item, open }: { item: NavItem, open: boolean }) => {
         minWidth: 0, 
         mr: open ? 3 : 'auto', 
         justifyContent: 'center',
-        color: 'inherit'
+        color: '#279B48'
       }}>
         {item.icon}
       </ListItemIcon>

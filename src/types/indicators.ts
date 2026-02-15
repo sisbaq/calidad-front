@@ -30,6 +30,11 @@ export interface IndicatorPeriodRow {
   sent?: boolean;
 }
 
+export interface IndicatorPeriodSummary {
+  period?: string;
+  sent?: boolean;
+}
+
 
 export interface Indicator {
   id: string;
@@ -40,12 +45,14 @@ export interface Indicator {
   tolerance?: number;
   periodicity: Periodicity;
   trend: Trend;
+  realValue?: number;
   active: boolean;
   processId?: string;
   responsible?: string;
   variables: IndicatorVariable[];
   process?: string;
   userId?: number;
+  periods?: IndicatorPeriodSummary[];
 }
 
 export interface ApiIndicator {

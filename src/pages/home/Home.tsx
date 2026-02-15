@@ -87,6 +87,7 @@ const HomePage = () => {
                                 flex: 1,
                                 minWidth: { xs: '100%', sm: 260 },
                                 borderRadius: 3,
+                                border: `1px solid ${brandColors.green}`,
                                 py: 3,
                                 px: 2,
                                 display: 'flex',

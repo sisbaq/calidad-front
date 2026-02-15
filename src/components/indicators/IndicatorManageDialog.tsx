@@ -70,7 +70,6 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
   open,
   indicator,
   onClose,
-  onSave,
 }) => {
   const [rows, setRows] = useState<IndicatorPeriodRow[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -98,6 +97,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
         index: index + 1,
         label: `${index + 1}`,
         meta: null,
+        values: {},
         realValue: '',
         managementDate: '',
         possibleDate: '',

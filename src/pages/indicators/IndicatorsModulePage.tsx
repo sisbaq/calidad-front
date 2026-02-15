@@ -17,7 +17,6 @@ import { appColors } from '@/theme/colors';
 
 import type {
   Indicator,
-  PeriodRow,
   IndicatorPeriodRow,
   FrequencyOption,
   TrendOption,
@@ -31,69 +30,17 @@ import { IndicatorViewModal } from '../../components/indicators/IndicatorViewMod
 import { IndicatorTable } from '../../components/indicators/IndicatorTable';
 import { useAuth } from '@/hooks/useAuth';
 
-/* ===== BACKEND SERVICES (comentados por mock) ===== */
-// import {
-//   getIndicators,
-//   createIndicator,
-//   updateIndicator,
-//   deleteIndicator,
-//   getFrequencies,
-//   getTrends,
-//   getUnitsOfMeasure,
-// } from '@/services/indicator.service';
-// import { getProcesses } from '@/services/findings.service';
-// import { mapFrontendToApiPayload } from '@/mappers/indicator.mapper';
-
-/* ================================================= */
-
-const USE_MOCK = true;
-
-/* ===== MOCK DATA ===== */
-
-const mockIndicators: Indicator[] = [
-  {
-    id: '1',
-    name: 'Cumplimiento del plan de auditorías',
-    formula: 'auditorias cerradas / auditorias programadas * 100',
-    unit: '%',
-    annualTarget: 100,
-    periodicity: 'MENSUAL',
-    trend: 'ASC',
-    active: true,
-    responsible: 'Auditor líder',
-    variables: [],
-    process: 'Gestión de Calidad',
-
-    // ⬇️ AQUÍ va la opción B
-    periods: [
-      {
-        period: 'Enero',
-        sent: true,
-      },
-    ],
-  },
-];
-
-const mockFrequencies: FrequencyOption[] = [
-  { id: 1, name: 'Mensual' },
-  { id: 2, name: 'Trimestral' },
-];
-
-const mockTrends: TrendOption[] = [
-  { id: 1, name: 'Ascendente' },
-  { id: 2, name: 'Descendente' },
-];
-
-const mockUnits: UnitOption[] = [
-  { id: 1, name: '%' },
-  { id: 2, name: 'Número' },
-];
-
-const mockProcesses: ProcessOption[] = [
-  { id: 1, name: 'Gestión de Calidad' },
-];
-
-/* ===================== */
+import {
+  getIndicators,
+  createIndicator,
+  updateIndicator,
+  deleteIndicator,
+  getFrequencies,
+  getTrends,
+  getUnitsOfMeasure,
+} from '@/services/indicator.service';
+import { getProcesses } from '@/services/findings.service';
+import { mapFrontendToApiPayload } from '@/mappers/indicator.mapper';
 
 export const IndicatorsModulePage: React.FC = () => {
   const { session } = useAuth();
@@ -133,48 +80,37 @@ export const IndicatorsModulePage: React.FC = () => {
   /* ===== DATA LOADING ===== */
 
   useEffect(() => {
-    if (!USE_MOCK) {
-      /*
-      const fetchData = async () => {
-        try {
-          setLoading(true);
-          const [
-            indicatorsData,
-            frequenciesData,
-            trendsData,
-            unitsData,
-            processesData,
-          ] = await Promise.all([
-            getIndicators(),
-            getFrequencies(),
-            getTrends(),
-            getUnitsOfMeasure(),
-            getProcesses(),
-          ]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [
+          indicatorsData,
+          frequenciesData,
+          trendsData,
+          unitsData,
+          processesData,
+        ] = await Promise.all([
+          getIndicators(),
+          getFrequencies(),
+          getTrends(),
+          getUnitsOfMeasure(),
+          getProcesses(),
+        ]);
 
-          setIndicators(indicatorsData);
-          setFrequencies(frequenciesData);
-          setTrends(trendsData);
-          setUnits(unitsData);
-          setProcesses(processesData);
-        } catch (err) {
-          setError('Error al cargar los datos');
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchData();
-      */
-      return;
-    }
+        setIndicators(indicatorsData);
+        setFrequencies(frequenciesData);
+        setTrends(trendsData);
+        setUnits(unitsData);
+        setProcesses(processesData);
+        setError(null);
+      } catch (err) {
+        setError('Error al cargar los datos');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // ===== MOCK =====
-    setIndicators(mockIndicators);
-    setFrequencies(mockFrequencies);
-    setTrends(mockTrends);
-    setUnits(mockUnits);
-    setProcesses(mockProcesses);
-    setLoading(false);
+    void fetchData();
   }, []);
 
   /* ===== HANDLERS ===== */
@@ -187,33 +123,81 @@ export const IndicatorsModulePage: React.FC = () => {
   const handleCreateOrUpdate = async (indicator: Indicator) => {
     setSaving(true);
 
-    if (USE_MOCK) {
-      setIndicators((prev) => {
-        if (editingIndicator) {
-          return prev.map((i) =>
-            i.id === editingIndicator.id ? indicator : i,
-          );
-        }
-        return [...prev, indicator];
+    const unitId = units.find((u) => u.name === indicator.unit)?.id;
+    const frequencyId = frequencies.find(
+      (f) => f.name.toUpperCase() === indicator.periodicity,
+    )?.id;
+    const trendId = trends.find((t) => {
+      const trendValue = t.name === 'Ascendente' ? 'ASC' : 'DESC';
+      return trendValue === indicator.trend;
+    })?.id;
+    const processId =
+      (indicator.processId !== undefined
+        ? Number(indicator.processId)
+        : undefined) ??
+      processes.find((p) => p.name === indicator.process)?.id ??
+      (processes.length === 1 ? processes[0].id : undefined);
+
+    if (!unitId || !frequencyId || !trendId || !processId) {
+      setSnack({
+        open: true,
+        msg: 'Faltan datos para asociar unidad, frecuencia, tendencia o proceso.',
+        sev: 'error',
       });
+      setSaving(false);
+      return;
+    }
+
+    const payload = mapFrontendToApiPayload(
+      {
+        name: indicator.name,
+        formula: indicator.formula,
+        unit: indicator.unit,
+        annualTarget: indicator.annualTarget,
+        periodicity: indicator.periodicity,
+        trend: indicator.trend,
+        responsible: indicator.responsible,
+        variables: indicator.variables,
+        realValue: indicator.realValue,
+        tolerance: indicator.tolerance,
+      },
+      {
+        unitId,
+        frequencyId,
+        trendId,
+        processId,
+      },
+    );
+
+    try {
+      if (editingIndicator) {
+        await updateIndicator(editingIndicator.id, payload);
+      } else {
+        await createIndicator(payload);
+      }
+
+      const indicatorsData = await getIndicators();
+      setIndicators(indicatorsData);
 
       setSnack({
         open: true,
         msg: editingIndicator
-          ? 'Indicador actualizado (mock)'
-          : 'Indicador creado (mock)',
+          ? 'Indicador actualizado'
+          : 'Indicador creado',
         sev: 'success',
       });
 
       setFormOpen(false);
       setEditingIndicator(null);
+    } catch (err) {
+      setSnack({
+        open: true,
+        msg: 'No se pudo guardar el indicador',
+        sev: 'error',
+      });
+    } finally {
       setSaving(false);
-      return;
     }
-
-    /*
-    // BACKEND REAL AQUÍ
-    */
   };
 
   const handleEdit = (indicator: Indicator) => {
@@ -230,24 +214,25 @@ export const IndicatorsModulePage: React.FC = () => {
     if (!indicatorToDelete) return;
 
     setDeleting(true);
-
-    if (USE_MOCK) {
-      setIndicators((prev) =>
-        prev.filter((i) => i.id !== indicatorToDelete.id),
-      );
+    try {
+      await deleteIndicator(indicatorToDelete.id);
+      const indicatorsData = await getIndicators();
+      setIndicators(indicatorsData);
       setSnack({
         open: true,
-        msg: 'Indicador eliminado (mock)',
+        msg: 'Indicador eliminado',
         sev: 'success',
       });
-      setDeleting(false);
       setDeleteDialogOpen(false);
-      return;
+    } catch (err) {
+      setSnack({
+        open: true,
+        msg: 'No se pudo eliminar el indicador',
+        sev: 'error',
+      });
+    } finally {
+      setDeleting(false);
     }
-
-    /*
-    // BACKEND REAL AQUÍ
-    */
   };
 
   const handleManage = (indicator: Indicator) => {
@@ -360,7 +345,12 @@ export const IndicatorsModulePage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
-          <Button color="error" variant="contained" onClick={handleConfirmDelete}>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleConfirmDelete}
+            disabled={deleting}
+          >
             Eliminar
           </Button>
         </DialogActions>

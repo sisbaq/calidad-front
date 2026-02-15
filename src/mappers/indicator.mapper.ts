@@ -79,7 +79,7 @@ export const mapFrontendToApiPayload = (
   indExplicacionVar1: indicator.variables[0]?.description || indicator.variables[0]?.label,
   indExplicacionVar2: indicator.variables[1]?.description || indicator.variables[1]?.label,
   indMetaAnual: String(indicator.annualTarget),
-  indValorReal: indicator.realValue,
+  indValorReal: indicator.realValue ?? 0,
   indResponsable: indicator.responsible ?? '',
   fkUnidadMedida: options.unitId,
   fkFrecuencia: options.frequencyId,
