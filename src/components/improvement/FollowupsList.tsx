@@ -40,6 +40,7 @@ interface FollowupsListProps {
   onSend: (idx: number, value: string) => void;
   onDelete?: (idx: number) => void;
   hideStatusInFollowup?: boolean;
+  enableSend?: boolean;
 }
 
 const BLUE = '#142334';
@@ -53,9 +54,10 @@ export default function FollowupsList({
   setFiles,
   sentFlags,
   onSave,
-  onSend: _onSend,
+  onSend,
   onDelete,
   hideStatusInFollowup = false,
+  enableSend = false,
 }: FollowupsListProps) {
   const isClosed = activity.closed === true;
 
@@ -205,6 +207,10 @@ export default function FollowupsList({
               if (isClosed) return showClosedInfo();
               return onSave(i, value);
             };
+            const onSendSafe = () => {
+              if (isClosed) return showClosedInfo();
+              return onSend(i, value);
+            };
             const onDeleteSafe = () => {
               if (isClosed) return showClosedInfo();
               if (sent) return;
@@ -228,7 +234,9 @@ export default function FollowupsList({
                 onClearFile={onClearFileSafe}
                 onPreviewFile={() => openPreviewSmart(fileObj, i)}
                 onSave={onSaveSafe}
+                onSend={onSendSafe}
                 onDelete={onDeleteSafe}
+                enableSend={enableSend}
               />
             );
           })}

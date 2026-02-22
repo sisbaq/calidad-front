@@ -6,6 +6,7 @@ export interface User {
   department: string;
   position: string;
   role: string;
+  idProceso?: number;
 }
 
 export interface Session {

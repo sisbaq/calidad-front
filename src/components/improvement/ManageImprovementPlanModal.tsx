@@ -92,7 +92,7 @@ export default function ManageImprovementPlanModal({
   finding,
   onSave = () => {},
 }: ManageImprovementPlanModalProps) {
-  const hasExistingActivities = (finding?.activities?.length ?? 0) > 0;
+  const hasExistingPlan = Boolean(finding?.improvementPlan);
 
  const isOportunidadMejora = String(finding?.findingType ?? '')
   .toLowerCase()
@@ -227,7 +227,7 @@ export default function ManageImprovementPlanModal({
       </Box>
 
       <DialogContent sx={{ bgcolor: 'background.default', p: { xs: 2, md: 3 } }}>
-        {hasExistingActivities ? (
+        {hasExistingPlan ? (
           <Alert
             icon={false}
             sx={{
@@ -454,7 +454,7 @@ export default function ManageImprovementPlanModal({
           Cancelar
         </Button>
 
-        {hasExistingActivities ? (
+        {hasExistingPlan ? (
           <Button
             variant="contained"
             onClick={onClose}

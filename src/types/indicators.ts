@@ -59,20 +59,40 @@ export interface ApiIndicator {
   indId: number;
   indNombre: string;
   indFormula: string;
-  indVariable_1: string;
-  indVariable_2: string;
-  indExplicacionVar1: string | null;
-  indExplicacionVar2: string | null;
   indMetaAnual: string;
-  indValorReal: number;
   indResponsable: string;
   indCreadoEl: string;
   indEstado: boolean;
+  indEstadoRegistro: boolean;
+  indTolerancia?: number | null;
   fkUnidadMedida: { undId: number; undNombreUnidad: string } | null;
   fkCreadoPor: { idUsuario: number; nombreCompleto: string } | null;
   fkFrecuencia: { freId: number; freNombreFrecuencia: string } | null;
   fkTendencia: { tenId: number; tenNomTendencia: string } | null;
   fkProceso: { idProceso: number; nombre: string } | null;
+  fkEstadoGestion?: { estId: number; estNombre: string } | null;
+}
+
+export interface ApiIndicatorResult {
+  rdiId: number;
+  rdiValorReal: string; // numeric type from PostgreSQL comes as string
+  rdiObservacion: string | null;
+  rdiVigencia: number;
+  rdiCreadoEl: string;
+  rdiMetaAcumulada: string; // numeric type from PostgreSQL comes as string
+  fkGestionadoPor?: { idUsuario: number; nombreCompleto: string };
+  fkIndicador?: { indId: number; indNombre: string };
+}
+
+export interface IndicatorResult {
+  id: number;
+  realValue: number;
+  observation: string | null;
+  fiscalYear: number;
+  createdAt: string;
+  accumulatedTarget: number;
+  managedBy?: { id: number; name: string };
+  indicator?: { id: number; name: string };
 }
 
 
@@ -174,15 +194,19 @@ export interface UnitOption {
 export interface IndicatorApiPayload {
   indNombre: string;
   indFormula: string;
-  indVariable_1: string;
-  indVariable_2: string;
-  indExplicacionVar1?: string;
-  indExplicacionVar2?: string;
   indMetaAnual: string;
-  indValorReal: number;
   indResponsable: string;
+  indEstadoRegistro: boolean;
+  indTolerancia: number;
   fkUnidadMedida: number;
   fkFrecuencia: number;
   fkTendencia: number;
   fkProceso: number;
+}
+
+export interface IndicatorResultPayload {
+  rdiValorReal: number;
+  rdiObservacion?: string | null;
+  rdiVigencia: number;
+  fkIndicador: number;
 }

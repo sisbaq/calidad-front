@@ -10,6 +10,8 @@ import type {
   FrequencyOption,
   TrendOption,
   UnitOption,
+  ApiIndicatorResult,
+  IndicatorResult,
 } from '@/types/indicators';
 import { PERIODICITY_CONFIG } from '@/types/indicators';
 
@@ -25,6 +27,24 @@ const mapFrequencyToEnum = (freNombreFrecuencia: string): Periodicity => {
   return map[freNombreFrecuencia] ?? 'MENSUAL';
 };
 
+// Export for converting frequency name to enum
+export const frequencyNameToEnum = (freNombreFrecuencia: string): Periodicity => {
+  return mapFrequencyToEnum(freNombreFrecuencia);
+};
+
+// Inverse mapping: convert enum value back to frequency name
+export const mapEnumToFrequencyName = (periodicity: Periodicity): string => {
+  const map: Record<Periodicity, string> = {
+    'MENSUAL': 'Mensual',
+    'BIMESTRAL': 'Bimestral',
+    'TRIMESTRAL': 'Trimestral',
+    'CUATRIMESTRAL': 'Cuatrimestral',
+    'SEMESTRAL': 'Semestral',
+    'ANUAL': 'Anual',
+  };
+  return map[periodicity] ?? 'Mensual';
+};
+
 const mapTrendToEnum = (tenNomTendencia: string): Trend => {
   return tenNomTendencia === 'Ascendente' ? 'ASC' : 'DESC';
 };
@@ -35,28 +55,15 @@ export const mapApiIndicatorToFrontend = (api: ApiIndicator): Indicator => ({
   formula: api.indFormula,
   unit: api.fkUnidadMedida?.undNombreUnidad ?? '',
   annualTarget: parseFloat(api.indMetaAnual) || 0,
+  tolerance: api.indTolerancia ? Number(api.indTolerancia) : undefined,
   periodicity: mapFrequencyToEnum(api.fkFrecuencia?.freNombreFrecuencia ?? ''),
   trend: mapTrendToEnum(api.fkTendencia?.tenNomTendencia ?? ''),
-  realValue: api.indValorReal ?? 0,
   active: api.indEstado,
   responsible: api.indResponsable,
   process: api.fkProceso?.nombre,
   processId: api.fkProceso?.idProceso ? String(api.fkProceso.idProceso) : undefined,
   userId: api.fkCreadoPor?.idUsuario,
-  variables: [
-    {
-      id: 'v1',
-      key: api.indVariable_1,
-      label: api.indExplicacionVar1 ?? api.indVariable_1,
-      description: api.indExplicacionVar1 ?? undefined,
-    },
-    {
-      id: 'v2',
-      key: api.indVariable_2,
-      label: api.indExplicacionVar2 ?? api.indVariable_2,
-      description: api.indExplicacionVar2 ?? undefined,
-    },
-  ],
+  variables: [],
 });
 
 // Mapper options for frontend to API conversion
@@ -74,13 +81,10 @@ export const mapFrontendToApiPayload = (
 ): IndicatorApiPayload => ({
   indNombre: indicator.name,
   indFormula: indicator.formula,
-  indVariable_1: indicator.variables[0]?.key ?? '',
-  indVariable_2: indicator.variables[1]?.key ?? '',
-  indExplicacionVar1: indicator.variables[0]?.description || indicator.variables[0]?.label,
-  indExplicacionVar2: indicator.variables[1]?.description || indicator.variables[1]?.label,
   indMetaAnual: String(indicator.annualTarget),
-  indValorReal: indicator.realValue ?? 0,
   indResponsable: indicator.responsible ?? '',
+  indEstadoRegistro: true,
+  indTolerancia: indicator.tolerance ?? 0,
   fkUnidadMedida: options.unitId,
   fkFrecuencia: options.frequencyId,
   fkTendencia: options.trendId,
@@ -90,7 +94,7 @@ export const mapFrontendToApiPayload = (
 // Map API frequency to frontend option
 export const mapApiFrequencyToOption = (api: ApiFrequency): FrequencyOption => {
   const periodicityConfig = PERIODICITY_CONFIG.find(
-    p => p.label === api.freNombreFrecuencia
+    (p) => p.label.toLowerCase() === api.freNombreFrecuencia.toLowerCase()
   );
   return {
     id: api.freId,
@@ -109,4 +113,20 @@ export const mapApiTrendToOption = (api: ApiTrend): TrendOption => ({
 export const mapApiUnitToOption = (api: ApiUnit): UnitOption => ({
   id: api.undId,
   name: api.undNombreUnidad,
+});
+
+// Map API indicator result to frontend
+export const mapApiIndicatorResultToFrontend = (api: ApiIndicatorResult): IndicatorResult => ({
+  id: api.rdiId,
+  realValue: parseFloat(api.rdiValorReal),
+  observation: api.rdiObservacion,
+  fiscalYear: api.rdiVigencia,
+  createdAt: api.rdiCreadoEl,
+  accumulatedTarget: parseFloat(api.rdiMetaAcumulada),
+  managedBy: api.fkGestionadoPor
+    ? { id: api.fkGestionadoPor.idUsuario, name: api.fkGestionadoPor.nombreCompleto }
+    : undefined,
+  indicator: api.fkIndicador
+    ? { id: api.fkIndicador.indId, name: api.fkIndicador.indNombre }
+    : undefined,
 });

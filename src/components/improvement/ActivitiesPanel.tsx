@@ -46,6 +46,8 @@ interface ActivitiesPanelProps {
   onAddActivity?: (findingId: string | number, activity: string) => void;
   hideObservations?: boolean;
   hideFollowupStatus?: boolean;
+  /** Solo para auditoria: habilita boton Enviar seguimiento */
+  enableSend?: boolean;
 }
 
 const BLUE = '#142334';
@@ -58,6 +60,7 @@ export default function ActivitiesPanel({
   onAddActivity = () => { },
   hideObservations = false,
   hideFollowupStatus = false,
+  enableSend = false,
 }: ActivitiesPanelProps) {
   if (!finding) return null;
   const activities = Array.isArray(finding.activities) ? finding.activities : [];
@@ -208,6 +211,7 @@ export default function ActivitiesPanel({
                       onOpenObservations={(comments) => handleOpenObs(comments)}
                       hideObservations={hideObservations}
                       hideFollowupStatus={hideFollowupStatus}
+                      enableSend={enableSend}
                     />
                   );
                 })

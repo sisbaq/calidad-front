@@ -167,8 +167,12 @@ export default function FindingsTableCollapse({
                       <TableCell sx={{ whiteSpace: 'nowrap' }}> {fmtDate(r.improvementPlan?.startDate)}</TableCell>
 
                       <TableCell align="center">
-                        <Tooltip title="Gestionar">
-                          <IconButton size="small" onClick={() => onManage?.(row)} aria-label="gestionar">
+                        <Tooltip title={isManaged ? 'Plan ya gestionado' : 'Gestionar'}>
+                          <IconButton
+                            size="small"
+                            onClick={() => onManage?.(row)}
+                            aria-label="gestionar"
+                          >
                             <ManageSearchRoundedIcon />
                           </IconButton>
                         </Tooltip>
@@ -282,6 +286,7 @@ export default function FindingsTableCollapse({
                               onSendSeg={onSendSeg}
                               onDeleteSeg={onDeleteSeg}
                               onAddActivity={onAddActivity}
+                              enableSend
                             />
                           </Box>
                         </Collapse>

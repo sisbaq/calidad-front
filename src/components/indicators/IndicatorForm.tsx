@@ -14,7 +14,9 @@ import type {
   FrequencyOption,
   TrendOption,
   UnitOption,
+  Periodicity,
 } from '@/types/indicators';
+import { frequencyNameToEnum, mapEnumToFrequencyName } from '@/mappers/indicator.mapper';
 
 interface IndicatorFormProps {
   initialIndicator?: Indicator | null;
@@ -35,9 +37,10 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
-  type IndicatorFormState = Omit<Indicator, 'annualTarget' | 'tolerance'> & {
+  type IndicatorFormState = Omit<Indicator, 'annualTarget' | 'tolerance' | 'periodicity'> & {
     annualTarget: number | '';
     tolerance: number | '';
+    periodicity: string; 
   };
 
   const [form, setForm] = useState<IndicatorFormState>({
@@ -47,7 +50,7 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
     formula: '',
     annualTarget: '',
     tolerance: '',
-    periodicity: 'MENSUAL',
+    periodicity: '',
     trend: 'ASC',
     responsible: '',
     active: true,
@@ -58,8 +61,12 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
 
   useEffect(() => {
     if (initialIndicator) {
+      // Convert periodicity enum to frequency name for display in dropdown
+      const frequencyName = mapEnumToFrequencyName(initialIndicator.periodicity as Periodicity);
+
       setForm({
         ...initialIndicator,
+        periodicity: frequencyName,
         tolerance: initialIndicator.tolerance ?? '',
       });
     }
@@ -101,12 +108,18 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
       return;
     }
 
+    // Convert frequency name to enum value
+    const periodicity: Periodicity = form.periodicity
+      ? frequencyNameToEnum(form.periodicity)
+      : 'MENSUAL';
+
     onSubmit({
       ...form,
+      periodicity,
       annualTarget: annualTargetValue,
       tolerance: toleranceValue,
       variables: [],
-    });
+    } as Indicator);
   };
 
   return (
@@ -219,7 +232,7 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
             onChange={handleChange('periodicity')}
           >
             {frequencies.map((f) => (
-              <MenuItem key={f.id} value={f.name.toUpperCase()}>
+              <MenuItem key={f.id} value={f.name}>
                 {f.name}
               </MenuItem>
             ))}

@@ -245,31 +245,19 @@ export const IndicatorTable: React.FC<Props> = ({ indicators, role, processes = 
                                                     Ver
                                                 </Button>
                                             ) : (
-                                                <Tooltip
-                                                    title={
-                                                        hasSentTracking
-                                                            ? 'Este indicador ya tiene seguimientos enviados'
-                                                            : 'Gestionar indicador'
-                                                    }
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    startIcon={<VisibilityIcon />}
+                                                    sx={{
+                                                        textTransform: 'none',
+                                                        borderColor: appColors.blue,
+                                                        color: appColors.blue,
+                                                    }}
+                                                    onClick={() => onManage(indicator)}
                                                 >
-                                                    <span>
-                                                        <Button
-                                                            variant="outlined"
-                                                            size="small"
-                                                            startIcon={<VisibilityIcon />}
-                                                            disabled={hasSentTracking}
-                                                            sx={{
-                                                                textTransform: 'none',
-                                                                borderColor: appColors.blue,
-                                                                color: appColors.blue,
-                                                            }}
-                                                            onClick={() => onManage(indicator)}
-                                                        >
-                                                            Gestionar
-                                                        </Button>
-                                                    </span>
-                                                </Tooltip>
-
+                                                    Gestionar
+                                                </Button>
                                             )}
                                         </TableCell>
                                     </TableRow>

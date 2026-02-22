@@ -48,6 +48,7 @@ interface ActivityRowProps {
   onOpenObservations?: (comments: FollowupComments) => void;
   hideObservations?: boolean;
   hideFollowupStatus?: boolean;
+  enableSend?: boolean;
 }
 
 export default function ActivityRow({
@@ -62,6 +63,7 @@ export default function ActivityRow({
   onOpenObservations = () => {},
   hideObservations = false,
   hideFollowupStatus = false,
+  enableSend = false,
 }: ActivityRowProps) {
   const toNum = (obj: Record<number, unknown> = {}): Record<number, string> => ({
     1: (obj[1] ?? '') as string,
@@ -180,6 +182,7 @@ export default function ActivityRow({
                   onDeleteSeg?.({ findingId, activityId: activity.id, segKey });
                 }}
                 hideStatusInFollowup={hideFollowupStatus}
+                enableSend={enableSend}
               />
             </Box>
           </Collapse>

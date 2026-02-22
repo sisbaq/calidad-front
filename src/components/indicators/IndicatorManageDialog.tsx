@@ -22,6 +22,7 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 
 import SendIcon from '@mui/icons-material/Send';
@@ -38,6 +39,7 @@ import {
   getPeriodConfig,
 } from '../../types/indicators';
 import { useNavigate } from 'react-router-dom';
+import { createIndicatorResult, getIndicatorResults } from '@/services/indicator.service';
 
 
 interface IndicatorManageDialogProps {
@@ -74,6 +76,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
 }) => {
   const navigate = useNavigate();
   const [rows, setRows] = useState<IndicatorPeriodRow[]>([]);
+  const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
 
@@ -88,28 +91,78 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
     if (!indicator || !open) {
       setRows([]);
       setFieldErrors({});
+      setLoading(false);
       return;
     }
 
-    const { periods } = getPeriodConfig(indicator.periodicity);
+    const loadIndicatorData = async () => {
+      setLoading(true);
+      try {
+        const { periods } = getPeriodConfig(indicator.periodicity);
 
-    const initialRows: IndicatorPeriodRow[] = Array.from(
-      { length: periods },
-      (_, index) => ({
-        index: index + 1,
-        label: `${index + 1}`,
-        meta: null,
-        values: {},
-        realValue: '',
-        managementDate: '',
-        possibleDate: '',
-        observation: '',
-        evidence: null,
-        sent: false,
-      }),
-    );
+        const initialRows: IndicatorPeriodRow[] = Array.from(
+          { length: periods },
+          (_, index) => ({
+            index: index + 1,
+            label: `${index + 1}`,
+            meta: null,
+            values: {},
+            realValue: '',
+            managementDate: '',
+            possibleDate: '',
+            observation: '',
+            evidence: null,
+            sent: false,
+          }),
+        );
 
-    setRows(initialRows);
+        // Cargar resultados ya enviados desde el backend
+        const results = await getIndicatorResults();
+        const indicatorResults = results.filter(
+          (result) => result.indicator?.id === Number(indicator.id)
+        );
+
+        // Marcar períodos ya enviados
+        indicatorResults.forEach((result) => {
+          const periodIndex = result.fiscalYear - 1;
+          if (periodIndex >= 0 && periodIndex < initialRows.length) {
+            initialRows[periodIndex] = {
+              ...initialRows[periodIndex],
+              meta: result.accumulatedTarget,
+              realValue: String(result.realValue),
+              observation: result.observation || '',
+              sent: true,
+            };
+          }
+        });
+
+        setRows(initialRows);
+      } catch (error) {
+        console.error('Error loading indicator results:', error);
+        // Si falla la carga, mostrar filas vacías
+        const { periods } = getPeriodConfig(indicator.periodicity);
+        const initialRows: IndicatorPeriodRow[] = Array.from(
+          { length: periods },
+          (_, index) => ({
+            index: index + 1,
+            label: `${index + 1}`,
+            meta: null,
+            values: {},
+            realValue: '',
+            managementDate: '',
+            possibleDate: '',
+            observation: '',
+            evidence: null,
+            sent: false,
+          }),
+        );
+        setRows(initialRows);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadIndicatorData();
   }, [indicator, open]);
 
 
@@ -162,8 +215,9 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
     return true;
   };
 
-  const handleSendRow = () => {
+  const handleSendRow = async () => {
     if (selectedRowIndex === null) return;
+    if (!indicator) return;
 
     const row = rows[selectedRowIndex];
 
@@ -183,15 +237,30 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
       return;
     }
 
-    setRows((prev) => {
-      const updated = [...prev];
-      updated[selectedRowIndex].sent = true;
-      return updated;
-    });
+    try {
+      const realValue = Number(row.realValue);
+      const payload = {
+        rdiValorReal: realValue,
+        rdiObservacion: row.observation,
+        rdiVigencia: row.index,
+        fkIndicador: Number(indicator.id),
+      };
 
-    setConfirmOpen(false);
-    setSelectedRowIndex(null);
-    setSuccessOpen(true);
+      await createIndicatorResult(payload);
+
+      setRows((prev) => {
+        const updated = [...prev];
+        updated[selectedRowIndex].sent = true;
+        return updated;
+      });
+
+      setConfirmOpen(false);
+      setSelectedRowIndex(null);
+      setSuccessOpen(true);
+    } catch (error) {
+      setErrorMessage('No se pudo enviar el seguimiento.');
+      setConfirmOpen(false);
+    }
   };
 
 
@@ -236,6 +305,18 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
         </DialogTitle>
 
         <DialogContent>
+          {loading ? (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: 300,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          ) : (
           <TableContainer component={Paper}>
             <Table size="small" stickyHeader>
               <TableHead>
@@ -429,6 +510,7 @@ export const IndicatorManageDialog: FC<IndicatorManageDialogProps> = ({
               </TableBody>
             </Table>
           </TableContainer>
+          )}
         </DialogContent>
 
         <DialogActions>

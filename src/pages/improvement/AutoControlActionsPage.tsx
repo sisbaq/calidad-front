@@ -573,10 +573,11 @@ export default function AutoControlActionsPage() {
         <DialogTitle>Actividades</DialogTitle>
         <DialogContent>
           {selectedViewFinding && (
-            <ActivitiesPanel
+              <ActivitiesPanel
               finding={selectedViewFinding}
               hideObservations
               hideFollowupStatus
+                enableSend={false}
             />
           )}
         </DialogContent>

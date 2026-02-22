@@ -2,18 +2,21 @@ import { axiosInstance } from '@/api/axiosInstance';
 import type { 
   Indicator, 
   IndicatorApiPayload,
+  IndicatorResultPayload,
   ApiFrequency,
   ApiTrend,
   ApiUnit,
   FrequencyOption,
   TrendOption,
   UnitOption,
+  IndicatorResult,
 } from '@/types/indicators';
 import { 
   mapApiIndicatorToFrontend,
   mapApiFrequencyToOption,
   mapApiTrendToOption,
   mapApiUnitToOption,
+  mapApiIndicatorResultToFrontend,
 } from '@/mappers/indicator.mapper';
 
 // In-memory cache for dropdown options
@@ -29,7 +32,43 @@ export const getIndicators = async (): Promise<Indicator[]> => {
       throw new Error('Invalid response format');
     }
 
-    return data.map(mapApiIndicatorToFrontend);
+    const indicators = data.map(mapApiIndicatorToFrontend);
+
+    // Obtener resultados de indicadores para marcar cuáles tienen seguimientos
+    try {
+      const results = await getIndicatorResults();
+      
+      // Crear un mapa de indicadores con sus períodos enviados
+      const indicatorResultsMap = new Map<string, Set<number>>();
+      results.forEach((result) => {
+        const indicatorId = String(result.indicator?.id);
+        if (!indicatorResultsMap.has(indicatorId)) {
+          indicatorResultsMap.set(indicatorId, new Set());
+        }
+        indicatorResultsMap.get(indicatorId)?.add(result.fiscalYear);
+      });
+
+      // Adjuntar información de períodos a cada indicador
+      indicators.forEach((indicator) => {
+        const sentPeriods = indicatorResultsMap.get(indicator.id);
+        if (sentPeriods && sentPeriods.size > 0) {
+          indicator.periods = Array.from(sentPeriods).map((periodNum) => ({
+            period: String(periodNum),
+            sent: true,
+          }));
+        } else {
+          indicator.periods = [];
+        }
+      });
+    } catch (err) {
+      console.warn('Failed to fetch indicator results, continuing without tracking info:', err);
+      // Si falla la carga de resultados, continuar sin información de seguimiento
+      indicators.forEach((indicator) => {
+        indicator.periods = [];
+      });
+    }
+
+    return indicators;
   } catch (error) {
     console.error('Failed to fetch indicators:', error);
     throw new Error('No se pudieron obtener los indicadores.');
@@ -61,6 +100,32 @@ export const deleteIndicator = async (id: string | number): Promise<void> => {
   } catch (error) {
     console.error('Failed to delete indicator:', error);
     throw new Error('No se pudo eliminar el indicador.');
+  }
+};
+
+export const createIndicatorResult = async (
+  payload: IndicatorResultPayload,
+): Promise<void> => {
+  try {
+    await axiosInstance.post('/crear/resultadoIndicador', payload);
+  } catch (error) {
+    console.error('Failed to create indicator result:', error);
+    throw new Error('No se pudo enviar el seguimiento del indicador.');
+  }
+};
+
+export const getIndicatorResults = async (): Promise<IndicatorResult[]> => {
+  try {
+    const { data } = await axiosInstance.get('/get/resultadoIndicador');
+    
+    if (!Array.isArray(data)) {
+      return [];
+    }
+    
+    return data.map(mapApiIndicatorResultToFrontend);
+  } catch (error) {
+    console.error('Failed to fetch indicator results:', error);
+    throw new Error('No se pudieron obtener los resultados de indicadores.');
   }
 };
 

@@ -40,7 +40,7 @@ import {
   getUnitsOfMeasure,
 } from '@/services/indicator.service';
 import { getProcesses } from '@/services/findings.service';
-import { mapFrontendToApiPayload } from '@/mappers/indicator.mapper';
+import { mapFrontendToApiPayload, mapEnumToFrequencyName } from '@/mappers/indicator.mapper';
 
 export const IndicatorsModulePage: React.FC = () => {
   const { session } = useAuth();
@@ -77,8 +77,7 @@ export const IndicatorsModulePage: React.FC = () => {
     sev: 'success' | 'error';
   }>({ open: false, msg: '', sev: 'success' });
 
-  /* ===== DATA LOADING ===== */
-
+ 
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -113,7 +112,6 @@ export const IndicatorsModulePage: React.FC = () => {
     void fetchData();
   }, []);
 
-  /* ===== HANDLERS ===== */
 
   const handleToggleForm = () => {
     setFormOpen((p) => !p);
@@ -123,25 +121,35 @@ export const IndicatorsModulePage: React.FC = () => {
   const handleCreateOrUpdate = async (indicator: Indicator) => {
     setSaving(true);
 
-    const unitId = units.find((u) => u.name === indicator.unit)?.id;
-    const frequencyId = frequencies.find(
-      (f) => f.name.toUpperCase() === indicator.periodicity,
+    // Buscar IDs para unidad, frecuencia y tendencia
+    const unitId = units.find(
+      (u) => u.name.toLowerCase().trim() === indicator.unit.toLowerCase().trim(),
     )?.id;
-    const trendId = trends.find((t) => {
-      const trendValue = t.name === 'Ascendente' ? 'ASC' : 'DESC';
-      return trendValue === indicator.trend;
+
+    const frequencyName = mapEnumToFrequencyName(indicator.periodicity);
+    const frequencyId = frequencies.find((f) => {
+      return f.name.toLowerCase().trim() === frequencyName.toLowerCase().trim();
     })?.id;
-    const processId =
-      (indicator.processId !== undefined
-        ? Number(indicator.processId)
-        : undefined) ??
-      processes.find((p) => p.name === indicator.process)?.id ??
-      (processes.length === 1 ? processes[0].id : undefined);
+
+    const trendId = trends.find((t) => {
+      const trendCode = t.name === 'Ascendente' ? 'ASC' : 'DESC';
+      return trendCode === indicator.trend;
+    })?.id;
+
+    // Obtener el processId del usuario (cada usuario está asignado a un proceso)
+    const processId = session?.user?.idProceso;
 
     if (!unitId || !frequencyId || !trendId || !processId) {
+      console.error('Missing IDs:', { unitId, frequencyId, trendId, processId });
+      console.error('Indicator values:', { 
+        unit: indicator.unit, 
+        periodicity: indicator.periodicity, 
+        trend: indicator.trend, 
+        userProcess: session?.user?.idProceso 
+      });
       setSnack({
         open: true,
-        msg: 'Faltan datos para asociar unidad, frecuencia, tendencia o proceso.',
+        msg: 'Faltan datos. Verifica que hayas completado todos los campos y que tu usuario tenga un proceso asignado.',
         sev: 'error',
       });
       setSaving(false);

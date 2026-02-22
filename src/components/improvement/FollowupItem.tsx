@@ -28,7 +28,9 @@ interface FollowupItemProps {
   onClearFile: () => void;
   onPreviewFile: () => void;
   onSave: () => void;
+  onSend: () => void;
   onDelete: () => void;
+  enableSend?: boolean;
 }
 
 const BLUE = '#142334';
@@ -47,13 +49,18 @@ export default function FollowupItem({
   onClearFile,
   onPreviewFile,
   onSave,
+  onSend,
   onDelete,
+  enableSend = false,
 }: FollowupItemProps) {
+  const hasBase = (baseValue ?? '').trim().length > 0;
+  const effectiveSent = sent || (enableSend && hasBase);
   // Si está enviado o la actividad está cerrada, se bloquea edición.
-  const disabled = sent || isClosed;
+  const disabled = effectiveSent || isClosed;
 
   // Detecta si hay cambios locales vs. base almacenada (para habilitar Guardar)
   const hasChanges = (value ?? '') !== (baseValue ?? '');
+  const canSend = !disabled && !hasBase && (value ?? '').trim().length > 0;
 
   const [confirmDelFile, setConfirmDelFile] = useState(false);
   const [confirmDelSeg, setConfirmDelSeg] = useState(false);
@@ -72,7 +79,7 @@ export default function FollowupItem({
             multiline
             minRows={3}
             size="small"
-            placeholder={label}
+            placeholder="Escribe el seguimiento..."
             disabled={disabled}
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -95,9 +102,9 @@ export default function FollowupItem({
           <TableCell sx={{ width: 120, verticalAlign: 'top', pt: 3 }}>
             <Chip
               size="small"
-              color={sent ? 'success' : hasChanges ? 'warning' : 'default'}
-              label={sent ? 'enviado' : hasChanges ? 'borrador' : 'guardado'}
-              variant={sent ? 'filled' : 'outlined'}
+              color={effectiveSent ? 'success' : hasChanges ? 'warning' : 'default'}
+              label={effectiveSent ? 'enviado' : hasChanges ? 'borrador' : 'guardado'}
+              variant={effectiveSent ? 'filled' : 'outlined'}
             />
           </TableCell>
         )}
@@ -105,27 +112,51 @@ export default function FollowupItem({
         {/* Acciones (sin botón Editar) */}
         <TableCell align="right" sx={{ width: 180, verticalAlign: 'top', pt: 3 }}>
           <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-            {/* Guardar como borrador (no bloquea) */}
-            <Tooltip title="Guardar (no bloquea)">
-              <span>
-                <IconButton
-                  size="small"
-                  onClick={onSave}
-                  disabled={disabled || !hasChanges}
-                  sx={{
-                    bgcolor: BLUE,
-                    color: '#fff',
-                    '&:hover': { bgcolor: '#0e1926' },
-                    px: 1.25,
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    Guardar
-                  </Typography>
-                </IconButton>
-              </span>
-            </Tooltip>
+            {!enableSend && (
+              <Tooltip title="Guardar (no bloquea)">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={onSave}
+                    disabled={disabled || !hasChanges}
+                    sx={{
+                      bgcolor: BLUE,
+                      color: '#fff',
+                      '&:hover': { bgcolor: '#0e1926' },
+                      px: 1.25,
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                      Guardar
+                    </Typography>
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+
+            {enableSend && (
+              <Tooltip title="Enviar seguimiento (bloquea edición)">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={onSend}
+                    disabled={!canSend}
+                    sx={{
+                      bgcolor: '#0f6b3b',
+                      color: '#fff',
+                      '&:hover': { bgcolor: '#0a522d' },
+                      px: 1.25,
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                      Enviar
+                    </Typography>
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
 
             {/* Eliminar (solo si no está enviado y actividad no cerrada) */}
             <Tooltip title={isClosed ? 'No se puede eliminar: actividad cerrada' : sent ? 'No se puede eliminar: ya fue enviado' : 'Eliminar seguimiento'}>

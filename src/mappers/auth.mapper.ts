@@ -15,5 +15,6 @@ export const mapApiUserToFrontend = (apiUser: any): User => {
     department: apiUser.department || apiUser.dependencia, 
     position: apiUser.position || apiUser.cargo, 
     role: apiUser.role || apiUser.rol,
+    idProceso: apiUser.processId || apiUser.idProceso,
   };
 };
