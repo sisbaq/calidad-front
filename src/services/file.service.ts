@@ -10,15 +10,25 @@ import { axiosInstance } from '@/api/axiosInstance';
  */
 
 /**
- * Helper function to extract filename from Content-Disposition header
+ * Helper function to extract filename from Content-Disposition header.
+ * Prefers RFC 5987 filename*=UTF-8''... over the basic filename="..." fallback.
  */
 const getFilenameFromResponse = (response: any, fallback: string): string => {
   const contentDisposition = response.headers['content-disposition'];
-  console.debug(response.headers);
   if (contentDisposition) {
-    const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-    if (match && match[1]) {
-      return match[1].replace(/['"]/g, '');
+    // Try RFC 5987 filename* first — properly encoded UTF-8 name
+    const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''([^;\n\s]*)/i);
+    if (rfc5987Match?.[1]) {
+      try {
+        return decodeURIComponent(rfc5987Match[1]);
+      } catch {
+        // fall through to basic filename
+      }
+    }
+    // Fall back to basic filename=""
+    const basicMatch = contentDisposition.match(/filename="([^"]*)"/);
+    if (basicMatch?.[1]) {
+      return basicMatch[1];
     }
   }
   return fallback;
