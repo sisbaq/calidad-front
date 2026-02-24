@@ -125,8 +125,6 @@ export default function ManageImprovementPlansPage({
 
   const filteredRows = useMemo(() => {
     return rows
-      .filter((r) => !processName || r.auditedProcess.startsWith(processName))
-
       .filter((r) =>
         !filters.noHallazgo
           ? true
@@ -146,7 +144,7 @@ export default function ManageImprovementPlansPage({
       .filter((r) => !filters.auditType || r.auditType === filters.auditType)
 
       .filter((r) => !filters.sourceType || r.source === filters.sourceType);
-  }, [rows, filters, processName]);
+  }, [rows, filters]);
 
   const handleExpand = async (findingId: string | number) => {
     const finding = rows.find((r) => String(r.id) === String(findingId));
