@@ -33,11 +33,7 @@ function getYear(fechaStr: string | undefined): number | null {
   return d.getFullYear();
 }
 
-export default function ManageImprovementPlansPage({
-  processName = 'Gestión Documental',
-}: {
-  processName?: string;
-}) {
+export default function ManageImprovementPlansPage({}) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<FindingWithPlan[]>([]);
   const [filters, setFilters] = useState<ImprovementPlanFilters>({
