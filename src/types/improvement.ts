@@ -150,7 +150,6 @@ export interface ApiImprovementPlanActivity {
 export interface ImprovementPlanFilters {
   tipo: string;
   estado: string;
-  year: string;
   auditType: string;
   sourceType: string;
   noHallazgo: string;

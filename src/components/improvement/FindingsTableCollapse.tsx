@@ -41,9 +41,29 @@ function EstadoChip({ estado = 'Abierto' }: { estado: string }) {
 }
 const fmtDate = (d?: string): string => {
   if (!d) return '—';
-  const parts = String(d).includes('/') ? String(d).split('/').reverse().join('-') : String(d);
-  const date = new Date(parts);
-  if (Number.isNaN(date.getTime())) return String(d);
+  const raw = String(d).trim();
+
+  // Parse without timezone shift: build a local date from components.
+  let year: number | null = null;
+  let month: number | null = null;
+  let day: number | null = null;
+
+  if (raw.includes('/')) {
+    const [dd, mm, yyyy] = raw.split('/');
+    day = Number(dd);
+    month = Number(mm);
+    year = Number(yyyy);
+  } else if (raw.includes('-')) {
+    const [yyyy, mm, dd] = raw.split('-');
+    day = Number(dd);
+    month = Number(mm);
+    year = Number(yyyy);
+  }
+
+  if (!year || !month || !day) return raw;
+
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return raw;
   return date.toLocaleDateString('es-CO');
 };
 

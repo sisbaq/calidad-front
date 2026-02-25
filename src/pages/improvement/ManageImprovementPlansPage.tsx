@@ -26,20 +26,12 @@ function serializeActivities(activities: ImprovementPlanActivity[]): string {
     .join('\n');
 }
 
-function getYear(fechaStr: string | undefined): number | null {
-  if (!fechaStr) return null;
-  const d = new Date(fechaStr);
-  if (isNaN(d.getTime())) return null;
-  return d.getFullYear();
-}
-
 export default function ManageImprovementPlansPage({}) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<FindingWithPlan[]>([]);
   const [filters, setFilters] = useState<ImprovementPlanFilters>({
     tipo: '',
     estado: '',
-    year: '',
     auditType: '',
     sourceType: '',
     noHallazgo: '',
@@ -114,11 +106,6 @@ export default function ManageImprovementPlansPage({}) {
     return Array.from(s);
   }, [rows]);
 
-  const yearOptions = useMemo(() => {
-    const s = new Set(rows.map((r) => getYear(r.date)).filter(Boolean));
-    return Array.from(s).sort((a, b) => (b || 0) - (a || 0)) as number[];
-  }, [rows]);
-
   const filteredRows = useMemo(() => {
     return rows
       .filter((r) =>
@@ -130,12 +117,6 @@ export default function ManageImprovementPlansPage({}) {
       .filter((r) => !filters.tipo || r.findingType === filters.tipo)
 
       .filter((r) => !filters.estado || (r.status || 'Abierto') === filters.estado)
-
-      .filter((r) => {
-        if (!filters.year) return true;
-        const y = getYear(r.improvementPlan?.startDate || r.date);
-        return Number(filters.year) === y;
-      })
 
       .filter((r) => !filters.auditType || r.auditType === filters.auditType)
 
@@ -420,7 +401,6 @@ export default function ManageImprovementPlansPage({}) {
 
       <GlobalSearch
         tipoOptions={tipoOptions}
-        yearOptions={yearOptions}
         auditTypeOptions={auditTypeOptions}
         sourceTypeOptions={sourceTypeOptions}
         filters={filters}

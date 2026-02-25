@@ -12,7 +12,6 @@ type ExtendedFilters = ImprovementPlanFilters & {
 interface GlobalSearchProps {
   tipoOptions?: string[];
   estadoOptions?: string[];
-  yearOptions?: number[];
   auditTypeOptions?: string[];
   sourceTypeOptions?: string[];
   filters: ExtendedFilters;
@@ -22,10 +21,9 @@ interface GlobalSearchProps {
 export default function GlobalSearch({
   tipoOptions = [],
   estadoOptions = ['Abierto', 'Cerrado', 'Vencido'],
-  yearOptions = [2025, 2024],
   auditTypeOptions = [],
   sourceTypeOptions = [],
-  filters = { tipo: '', estado: '', year: '', auditType: '', sourceType: '', noHallazgo: '' },
+  filters = { tipo: '', estado: '', auditType: '', sourceType: '', noHallazgo: '' },
   onFiltersChange = () => { },
 }: GlobalSearchProps) {
   const setFilter = (key: keyof ExtendedFilters, val: string) =>
@@ -38,7 +36,6 @@ export default function GlobalSearch({
     onFiltersChange({
       tipo: '',
       estado: '',
-      year: '',
       auditType: '',
       sourceType: '',
       noHallazgo: '',
@@ -77,27 +74,6 @@ export default function GlobalSearch({
               {tipoOptions.map((t) => (
                 <MenuItem key={t || '—'} value={t}>
                   {t || '—'}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-
-          <Grid size={{ xs: 6, sm: "auto" }}>
-            <TextField
-              select
-              size="small"
-              label="Año"
-              value={filters.year ?? ''}
-              onChange={(e) => setFilter('year', e.target.value)}
-              sx={{ width: 120, ...commonSx }}
-              InputLabelProps={shrink}
-            >
-              <MenuItem value="">
-                <em>Todos</em>
-              </MenuItem>
-              {yearOptions.map((y) => (
-                <MenuItem key={y} value={y}>
-                  {y}
                 </MenuItem>
               ))}
             </TextField>
