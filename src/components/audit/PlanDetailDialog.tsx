@@ -145,8 +145,26 @@ export default function PlanDetailDialog({
   };
 
 
-  const requestCloseActivity = (activityId: string | number) => {
-    setCloseDlg({ open: true, activityId });
+  const hasActivityFollowup = (activity: ImprovementPlanActivity): boolean => {
+    return Boolean(
+      activity.followup1 ||
+      activity.followup2 ||
+      activity.followup3 ||
+      activity.followup4
+    );
+  };
+
+  const requestCloseActivity = (activity: ImprovementPlanActivity) => {
+    if (!hasActivityFollowup(activity)) {
+      setSnackbar({
+        open: true,
+        msg: 'No se puede cerrar una actividad sin seguimiento.',
+        sev: 'warning',
+      });
+      return;
+    }
+
+    setCloseDlg({ open: true, activityId: activity.id });
   };
 
   const confirmCloseActivity = async () => {
@@ -154,6 +172,17 @@ export default function PlanDetailDialog({
     try {
       setClosing(true);
       setClosingId(closeDlg.activityId);
+
+      const activity = activities.find((act) => act.id === closeDlg.activityId);
+      if (activity && !hasActivityFollowup(activity)) {
+        setSnackbar({
+          open: true,
+          msg: 'No se puede cerrar una actividad sin seguimiento.',
+          sev: 'warning',
+        });
+        setCloseDlg({ open: false, activityId: null });
+        return;
+      }
 
       // Call the close service directly - returns the updated activity
       const updatedActivity = await closeImprovementPlanActivity(closeDlg.activityId);
@@ -239,7 +268,15 @@ export default function PlanDetailDialog({
                             {activity.description || 'Actividad'}
                           </Typography>
 
-                          <Tooltip title="Cerrar esta actividad">
+                          <Tooltip
+                            title={
+                              activity.closed
+                                ? 'La actividad ya esta cerrada'
+                                : !hasActivityFollowup(activity)
+                                  ? 'No se puede cerrar una actividad sin seguimiento'
+                                  : 'Cerrar esta actividad'
+                            }
+                          >
                             <Box
                               component="div"
                               onClick={(e) => e.stopPropagation()}
@@ -251,9 +288,14 @@ export default function PlanDetailDialog({
                                 variant="contained"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  requestCloseActivity(activity.id);
+                                  requestCloseActivity(activity);
                                 }}
-                                disabled={activity.closed || closedIds.has(activity.id) || closingId === activity.id}
+                                disabled={
+                                  activity.closed ||
+                                  closedIds.has(activity.id) ||
+                                  closingId === activity.id ||
+                                  !hasActivityFollowup(activity)
+                                }
                                 sx={{
                                   fontWeight: 700,
                                   borderRadius: 1.5,

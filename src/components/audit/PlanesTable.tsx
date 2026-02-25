@@ -55,6 +55,11 @@ export default function PlanesTable({
     return `${dd}/${mm}/${yyyy}`;
   };
 
+  const hasOpenActivities = (plan: ImprovementPlanWithDetails): boolean => {
+    if (!plan.activities || plan.activities.length === 0) return false;
+    return plan.activities.some((activity) => !activity.closed);
+  };
+
   return (
     <Paper
       elevation={0}
@@ -75,6 +80,13 @@ export default function PlanesTable({
           <TableBody>
             {visibleRows.map((r) => {
               const statusText = mapStatus(r.status);
+              const hasOpen = hasOpenActivities(r);
+              const closeDisabled = statusText === 'Cerrado' || hasOpen;
+              const closeTooltip = statusText === 'Cerrado'
+                ? 'El plan ya está cerrado'
+                : hasOpen
+                  ? 'Cierre no disponible: hay actividades abiertas'
+                  : 'Cerrar plan';
               return (
                 <TableRow key={r.id} hover>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>{r.processName}</TableCell>
@@ -98,12 +110,12 @@ export default function PlanesTable({
                         <VisibilityOutlinedIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title={statusText === 'Cerrado' ? 'El plan ya está cerrado' : 'Cerrar plan'}>
+                    <Tooltip title={closeTooltip}>
                       <span>
                         <IconButton
                           onClick={() => onCerrar?.(r)}
                           sx={{ color: colorPrimary }}
-                          disabled={statusText === 'Cerrado'}
+                          disabled={closeDisabled}
                         >
                           <CheckCircleOutlineIcon />
                         </IconButton>

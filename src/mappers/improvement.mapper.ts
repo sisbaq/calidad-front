@@ -85,6 +85,12 @@ export const mapApiActivityToFrontend = (
  * Includes all plan data plus additional display fields
  */
 export const mapApiPlanToTableRow = (apiPlan: ApiImprovementPlan): ImprovementPlanWithDetails => {
+  const activities = Array.isArray(apiPlan.actividades)
+    ? apiPlan.actividades
+        .filter((act) => act.actEstado === true)
+        .map(mapApiActivityToFrontend)
+    : undefined;
+
   return {
     id: apiPlan.plmId,
     findingId: apiPlan.fkIdHallazgo?.idHallazgo || 0,
@@ -94,6 +100,7 @@ export const mapApiPlanToTableRow = (apiPlan: ApiImprovementPlan): ImprovementPl
     status: apiPlan.plmEstadoPlan,
     createdAt: apiPlan.plmCreadoEn,
     updatedAt: apiPlan.plmActualizadoEl || undefined,
+    activities,
     processName: apiPlan.fkIdHallazgo?.fkIdProceso?.nombre || 'N/A',
     findingDescription: apiPlan.fkIdHallazgo?.descripcionHecho || 'Sin título',
     findingNumeral: apiPlan.fkIdHallazgo?.numeral || 'N/A',

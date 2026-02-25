@@ -6,7 +6,11 @@ import PlanesTable from '@components/audit/PlanesTable';
 import type { ImprovementPlanWithDetails } from '@/types/improvement';
 import PlanDetailDialog from '@components/audit/PlanDetailDialog';
 import ClosePlanDialog from '@components/audit/ClosePlanDialog';
-import { getImprovementPlansRaw, closeImprovementPlan } from '@/services/improvement.service';
+import {
+  getImprovementPlansRaw,
+  closeImprovementPlan,
+  getImprovementPlanActivitiesByPlanId,
+} from '@/services/improvement.service';
 import { mapApiPlanToTableRow } from '@/mappers/improvement.mapper';
 
 const COLOR_PRIMARY = '#0e2336';
@@ -23,7 +27,10 @@ export default function PlanesMejoramientoPage() {
   const [openDetail, setOpenDetail] = React.useState(false);
   const [openClose, setOpenClose] = React.useState(false);
   const [successSnackbar, setSuccessSnackbar] = React.useState(false);
-  const [errorSnackbar, setErrorSnackbar] = React.useState(false);
+  const [errorSnackbar, setErrorSnackbar] = React.useState<{ open: boolean; message: string }>(
+    { open: false, message: '' }
+  );
+  const [closeBlockedMessage, setCloseBlockedMessage] = React.useState<string>('');
 
   React.useEffect(() => {
     const fetchPlans = async () => {
@@ -61,18 +68,48 @@ export default function PlanesMejoramientoPage() {
     });
   }, [plans, filters]);
 
+  const hasOpenActivities = React.useCallback((plan: ImprovementPlanWithDetails | null) => {
+    if (!plan?.activities || plan.activities.length === 0) return false;
+    return plan.activities.some((activity) => !activity.closed);
+  }, []);
+
   const openVer = (row: ImprovementPlanWithDetails) => {
     setSelected(row);
     setOpenDetail(true);
   };
 
   const openCloseDlg = (row: ImprovementPlanWithDetails) => {
+    if (hasOpenActivities(row)) {
+      setErrorSnackbar({
+        open: true,
+        message: 'No se puede cerrar el plan mientras existan actividades abiertas.',
+      });
+      setCloseBlockedMessage('No se puede cerrar el plan mientras existan actividades abiertas.');
+      return;
+    }
     setSelected(row);
     setOpenClose(true);
+    setCloseBlockedMessage('');
   };
 
   const handleClosePlan = async (payload: { planId: string; motivo: string }) => {
     try {
+      let activities = selected?.activities;
+      if ((!activities || activities.length === 0) && selected?.id) {
+        try {
+          activities = await getImprovementPlanActivitiesByPlanId(selected.id);
+        } catch (err) {
+          console.error('Error fetching plan activities for validation:', err);
+        }
+      }
+
+      if (activities?.some((activity) => !activity.closed)) {
+        setErrorSnackbar({
+          open: true,
+          message: 'No se puede cerrar el plan mientras existan actividades abiertas.',
+        });
+        return;
+      }
       await closeImprovementPlan(payload.planId, payload.motivo);
       const apiPlans = await getImprovementPlansRaw();
       const mappedPlans = apiPlans.map(mapApiPlanToTableRow);
@@ -82,7 +119,10 @@ export default function PlanesMejoramientoPage() {
       setSuccessSnackbar(true);
     } catch (err) {
       console.error('Error closing plan:', err);
-      setErrorSnackbar(true);
+      setErrorSnackbar({
+        open: true,
+        message: 'No se pudo cerrar el plan de mejoramiento.',
+      });
     }
   };
 
@@ -118,6 +158,12 @@ export default function PlanesMejoramientoPage() {
       />
 
       <Divider sx={{ my: 2 }} />
+
+      {closeBlockedMessage && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {closeBlockedMessage}
+        </Alert>
+      )}
 
       {loading ? (
         <Stack alignItems="center" justifyContent="center" sx={{ py: 4 }}>
@@ -160,12 +206,12 @@ export default function PlanesMejoramientoPage() {
       </Snackbar>
 
       <Snackbar
-        open={errorSnackbar}
+        open={errorSnackbar.open}
         autoHideDuration={3000}
-        onClose={() => setErrorSnackbar(false)}
+        onClose={() => setErrorSnackbar({ open: false, message: '' })}
       >
-        <Alert severity="error" onClose={() => setErrorSnackbar(false)}>
-          No se pudo cerrar el plan de mejoramiento
+        <Alert severity="error" onClose={() => setErrorSnackbar({ open: false, message: '' })}>
+          {errorSnackbar.message}
         </Alert>
       </Snackbar>
     </Container>
