@@ -29,7 +29,7 @@ const HomePage = () => {
             title: 'ISO 45001',
             subtitle: 'Seguridad y Salud en el Trabajo',
             icon: <SecurityIcon fontSize="large" />,
-            color: brandColors.blue,
+            color: brandColors.green,
         },
     ];
 

@@ -123,16 +123,16 @@ export default function DashboardLayout() {
             <MenuIcon />
           </IconButton>
           <img
-            src={logoAlcaldia}
-            alt="Alcaldía de Barranquilla"
-            style={{ maxHeight: '40px', width: 'auto', objectFit: 'contain' }}
+            src={logoSigbaq}
+            alt="Sigbaq Logo"
+            style={{ height: '56px', width: 'auto', objectFit: 'contain' }}
           />
           <Box sx={{ flexGrow: 1 }} />
           <Stack direction="row" spacing={2} alignItems="center">
             <img
-              src={logoSigbaq}
-              alt="Sigbaq Logo"
-              style={{ height: '56px', width: 'auto', objectFit: 'contain' }}
+              src={logoAlcaldia}
+              alt="Alcaldía de Barranquilla"
+              style={{ maxHeight: '40px', width: 'auto', objectFit: 'contain' }}
             />
             <AccountPopover />
           </Stack>
