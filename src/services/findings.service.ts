@@ -170,12 +170,9 @@ export const updateFinding = async ({
       sourceId,
     );
 
-    await axiosInstance.put(`/editar/hallazgo/${findingId}`, payload);
+    const { data } = await axiosInstance.put(`/editar/hallazgo/${findingId}`, payload);
     
-    return {
-      ...finding,
-      id: findingId.toString(),
-    } as Finding;
+    return mapApiFindingToFrontend(data);
   } catch (error) {
     console.error('Failed to update finding:', error);
     throw new Error('No se pudo actualizar el hallazgo.');

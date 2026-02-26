@@ -11,11 +11,18 @@ import type {
  * Maps API finding response to frontend Finding interface
  */
 export const mapApiFindingToFrontend = (apiFinding: ApiFinding): Finding => {
+  // Convertir reportadoEn a formato YYYY-MM-DD para el input tipo date
+  let reportedOnDate = '';
+  if (apiFinding.reportadoEn) {
+    const fecha = new Date(apiFinding.reportadoEn);
+    reportedOnDate = fecha.toISOString().split('T')[0];
+  }
+
   return {
     id: apiFinding.idHallazgo.toString(),
     auditReportId: apiFinding.idInformeAuditoria.idInforme.toString(),
     auditReportDescription: apiFinding.idInformeAuditoria.descripcion,
-    reportedOnDate: apiFinding.reportadoEn || '',
+    reportedOnDate,
     auditedProcess: apiFinding.fkIdProceso.nombre,
     auditType: apiFinding.tipoAuditoria.tpaNombreTipo,
     findingType: apiFinding.tipoHallazgo.tphNomHallazgo,
