@@ -17,6 +17,8 @@ import {
   Tooltip,
   Collapse,
   Divider,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
@@ -71,6 +73,7 @@ export default function PlansTable({
 }: PlansTableProps) {
   const [query, setQuery] = useState('');
   const [openRows, setOpenRows] = useState(() => new Set<string | number>());
+  const [snackbar, setSnackbar] = useState({ open: false, msg: '' });
 
   const filteredPlans = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -101,6 +104,14 @@ export default function PlansTable({
 
   const cellWrap = { whiteSpace: 'normal', wordBreak: 'break-word' as const };
   const cellNoWrap = { whiteSpace: 'nowrap' as const };
+
+  const handleDelete = (plan: AuditPlan) => {
+    if ((plan.reports?.length || 0) > 0) {
+      setSnackbar({ open: true, msg: 'No puedes eliminar un plan que tiene un informe' });
+      return;
+    }
+    onDelete(plan);
+  };
 
   return (
     <>
@@ -155,6 +166,10 @@ export default function PlansTable({
             ) : (
               filteredPlans.map((p) => {
                 const isOpen = openRows.has(p.id);
+                const hasReports = (p.reports?.length || 0) > 0;
+                const deleteTooltip = hasReports
+                  ? 'No puedes eliminar un plan que tiene un informe'
+                  : 'Eliminar plan';
                 return (
                   <Fragment key={p.id}>
                     <TableRow hover>
@@ -195,8 +210,8 @@ export default function PlansTable({
                             <EditRoundedIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Eliminar plan">
-                          <IconButton size="small" onClick={() => onDelete(p)} sx={{ color: BRAND_BLUE }}>
+                        <Tooltip title={deleteTooltip}>
+                          <IconButton size="small" onClick={() => handleDelete(p)} sx={{ color: BRAND_BLUE }}>
                             <DeleteRoundedIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -332,6 +347,21 @@ export default function PlansTable({
                 : 'Página anterior'
         }
       />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ open: false, msg: '' })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ open: false, msg: '' })}
+          severity="warning"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.msg}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

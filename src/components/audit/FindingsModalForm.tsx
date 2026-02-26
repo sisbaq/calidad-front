@@ -230,12 +230,12 @@ export default function FindingsModalForm({ open, onClose, onSave, initialData, 
           </TextField>
 
           <TextField
-            fullWidth size="small" type="date" label="Fecha" name="date"
-            value={formData.date} onChange={handleChange}
-            onBlur={() => markTouched("date")}
+            fullWidth size="small" type="date" label="Fecha de Reporte" name="reportedOnDate"
+            value={formData.reportedOnDate} onChange={handleChange}
+            onBlur={() => markTouched("reportedOnDate")}
             InputLabelProps={{ shrink: true }}
-            error={touched.date && Boolean(errors.date)}
-            helperText={touched.date && errors.date}
+            error={touched.reportedOnDate && Boolean(errors.reportedOnDate)}
+            helperText={touched.reportedOnDate && errors.reportedOnDate}
           />
 
           <TextField

@@ -6,7 +6,7 @@ export const getInitialFindingData = (): FindingFormData => ({
   auditReportId: "",
   auditReportDescription: "",
   findingType: "",
-  date: "",
+  reportedOnDate: "",
   auditedProcess: "",
   reportedBy: "",
   description: "",
@@ -30,7 +30,7 @@ export function validateFinding(data: Partial<FindingFormData>): Partial<Record<
 
   if (!req(data.auditReportId)) errors.auditReportId = "Seleccione el informe de auditoría";
   if (!req(data.findingType)) errors.findingType = "Seleccione el tipo de registro";
-  if (!req(data.date)) errors.date = "Seleccione la fecha";
+  if (!req(data.reportedOnDate)) errors.reportedOnDate = "Seleccione la fecha de reporte";
   if (!req(data.auditedProcess)) errors.auditedProcess = "Seleccione el proceso auditado";
   if (!req(data.auditType)) errors.auditType = "Seleccione el tipo de auditoría";
   if (!req(data.source)) errors.source = "Seleccione la fuente";

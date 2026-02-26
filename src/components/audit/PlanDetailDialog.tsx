@@ -13,6 +13,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 
 import { getImprovementPlanActivitiesByPlanId, updateActivityObservation, closeImprovementPlanActivity } from '@/services/improvement.service';
+import { viewPlanActividadMejoramientoFile } from '@/services/file.service';
 import type { ImprovementPlanActivity, ImprovementPlanWithDetails } from '@/types/improvement';
 import { mapPlanStatus } from '@/mappers/improvement.mapper';
 
@@ -337,9 +338,21 @@ export default function PlanDetailDialog({
                                       <Tooltip title="Ver archivo">
                                         <IconButton
                                           size="small"
-                                          component="a"
-                                          href={seg.file.url}
-                                          target="_blank"
+                                          onClick={async () => {
+                                            try {
+                                              await viewPlanActividadMejoramientoFile(activity.id, seg.num as 1 | 2 | 3 | 4);
+                                            } catch (error) {
+                                              console.error('Error viewing file:', error);
+                                              const errorMsg = error instanceof Error ? error.message : 'No se pudo abrir el archivo';
+                                              setSnackbar({ 
+                                                open: true, 
+                                                msg: errorMsg === 'Archivo no encontrado' 
+                                                  ? 'El archivo no se encuentra en el servidor. Es posible que haya sido eliminado.'
+                                                  : errorMsg, 
+                                                sev: 'error' 
+                                              });
+                                            }
+                                          }}
                                           sx={{ color: colorPrimary }}
                                         >
                                           <AttachFileOutlinedIcon fontSize="small" />

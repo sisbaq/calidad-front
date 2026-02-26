@@ -78,7 +78,7 @@ export default function FindingsTable({ items, onEdit, onDelete }: FindingsTable
           <TableBody>
             {items.map((it) => (
               <TableRow key={it.id} hover>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>{it.date}</TableCell>
+                <TableCell sx={{ whiteSpace: "nowrap" }}>{it.reportedOnDate}</TableCell>
 
                 <TableCell>
                   <OverflowTooltip sx={{ whiteSpace: "nowrap" }}>{it.auditedProcess}</OverflowTooltip>

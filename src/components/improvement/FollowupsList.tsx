@@ -64,6 +64,11 @@ export default function FollowupsList({
   const [infoOpen, setInfoOpen] = useState(false);
   const showClosedInfo = () => setInfoOpen(true);
 
+  const [errorSnackbar, setErrorSnackbar] = useState<{ open: boolean; message: string }>({ 
+    open: false, 
+    message: '' 
+  });
+
   const hasContent = (i: FollowupIndex): boolean => {
     const base = (activity[H2A[i]] as unknown as string) ?? '';
     const local = draftSeg?.[i] ?? base;
@@ -105,6 +110,11 @@ export default function FollowupsList({
       await viewPlanActividadMejoramientoFile(activity.id, followupIdx);
     } catch (error) {
       console.error('Failed to view file:', error);
+      const errorMsg = error instanceof Error ? error.message : 'No se pudo abrir el archivo';
+      const displayMsg = errorMsg === 'Archivo no encontrado' 
+        ? 'El archivo no se encuentra en el servidor. Es posible que haya sido eliminado.'
+        : errorMsg;
+      setErrorSnackbar({ open: true, message: displayMsg });
     }
   };
 
@@ -250,6 +260,20 @@ export default function FollowupsList({
       >
         <Alert onClose={() => setInfoOpen(false)} severity="info" sx={{ width: '100%' }}>
           El auditor ha considerado que esta actividad está cerrada; no puede añadir más seguimientos.
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={errorSnackbar.open}
+        autoHideDuration={5000}
+        onClose={() => setErrorSnackbar({ open: false, message: '' })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setErrorSnackbar({ open: false, message: '' })} 
+          severity="error" 
+          sx={{ width: '100%' }}
+        >
+          {errorSnackbar.message}
         </Alert>
       </Snackbar>
     </Paper>

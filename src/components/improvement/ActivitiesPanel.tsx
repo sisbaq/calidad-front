@@ -42,6 +42,10 @@ interface ActivitiesPanelProps {
     activityId: string | number;
     segKey: string;
   }) => void;
+  onDeleteActivity?: (payload: {
+    findingId: string | number;
+    activityId: string | number;
+  }) => void | Promise<void>;
   /** (opcional) callback para el botón Añadir actividad */
   onAddActivity?: (findingId: string | number, activity: string) => void;
   hideObservations?: boolean;
@@ -57,6 +61,7 @@ export default function ActivitiesPanel({
   onUpdateSeg = () => { },
   onSendSeg = () => { },
   onDeleteSeg = () => { },
+  onDeleteActivity = () => { },
   onAddActivity = () => { },
   hideObservations = false,
   hideFollowupStatus = false,
@@ -97,6 +102,33 @@ export default function ActivitiesPanel({
     if (!p) return;
     await onSendSeg(p);
     closeSend();
+  };
+
+  const [confirmDelete, setConfirmDelete] = useState<{
+    open: boolean;
+    activityId: string | number | null;
+  }>({ open: false, activityId: null });
+
+  const requestDeleteActivity = (activityId: string | number, hasSent: boolean) => {
+    if (hasSent) {
+      setErrorMsg('No se puede eliminar la actividad porque ya tiene seguimientos enviados');
+      return;
+    }
+    setConfirmDelete({ open: true, activityId });
+  };
+
+  const cancelDeleteActivity = () => setConfirmDelete({ open: false, activityId: null });
+
+  const confirmDeleteActivity = async () => {
+    if (!confirmDelete.activityId) return;
+    try {
+      await onDeleteActivity({ findingId: finding.id, activityId: confirmDelete.activityId });
+      setConfirmDelete({ open: false, activityId: null });
+    } catch (error) {
+      console.error('Failed to delete activity:', error);
+      const msg = error instanceof Error ? error.message : 'No se pudo eliminar la actividad.';
+      setErrorMsg(msg);
+    }
   };
 
   const [obsOpen, setObsOpen] = useState(false);
@@ -208,6 +240,7 @@ export default function ActivitiesPanel({
                       onSaveSeg={onUpdateSeg}
                       onSendSeg={openSend}
                       onDeleteSeg={onDeleteSeg}
+                      onDeleteActivity={(activity, hasSent) => requestDeleteActivity(activity.id, hasSent)}
                       onOpenObservations={(comments) => handleOpenObs(comments)}
                       hideObservations={hideObservations}
                       hideFollowupStatus={hideFollowupStatus}
@@ -240,6 +273,15 @@ export default function ActivitiesPanel({
         message="¿Está seguro de ENVIAR este seguimiento? Luego no podrá editarlo."
         onCancel={closeSend}
         onConfirm={doSend}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        title="Eliminar actividad"
+        message="¿Seguro que deseas eliminar esta actividad? Esta acción no se puede deshacer."
+        onCancel={cancelDeleteActivity}
+        onConfirm={confirmDeleteActivity}
+        confirmText="Eliminar"
       />
 
       {!hideObservations && (

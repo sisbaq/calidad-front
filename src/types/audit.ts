@@ -54,7 +54,7 @@ export interface Finding {
   id: string;
   auditReportId: string;
   auditReportDescription: string;
-  date: string;
+  reportedOnDate: string;
   auditedProcess: string;
   auditType: string;
   findingType: string;
@@ -133,6 +133,7 @@ export interface ApiFinding {
   condicion: string | null;
   numeral: string | null;
   actualizadoEl: string | null;
+  reportadoEn: string;
   idInformeAuditoria: ApiAuditReport;
   fkFuente: ApiSource | null;
   tipoAuditoria: ApiAuditType;

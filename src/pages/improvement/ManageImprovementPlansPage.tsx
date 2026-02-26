@@ -11,6 +11,7 @@ import {
   updateImprovementPlanActivity,
   uploadActivityFollowupFile,
   getImprovementPlanActivitiesByFindingId,
+  deleteImprovementPlanActivity,
 } from '@services/improvement.service';
 import type {
   FindingWithPlan,
@@ -375,6 +376,40 @@ export default function ManageImprovementPlansPage({}) {
     }
   };
 
+  const onDeleteActivity = async ({
+    findingId,
+    activityId,
+  }: {
+    findingId: string | number;
+    activityId: string | number;
+  }) => {
+    try {
+      await deleteImprovementPlanActivity(activityId);
+
+      setRows((prev) =>
+        prev.map((r) => {
+          if (String(r.id) !== String(findingId)) return r;
+
+          const updatedActivities = (r.activities || []).filter(
+            (a) => String(a.id) !== String(activityId)
+          );
+          const improvementActivities = serializeActivities(updatedActivities);
+
+          return {
+            ...r,
+            activities: updatedActivities,
+            improvementActivities,
+          };
+        })
+      );
+
+      setOk(true);
+    } catch (error) {
+      console.error('Failed to delete activity:', error);
+      setErr(true);
+    }
+  };
+
   if (loading) {
     return (
       <Box
@@ -416,6 +451,7 @@ export default function ManageImprovementPlansPage({}) {
         onUpdateSeg={handleUpdateSeg}
         onSendSeg={handleSendSeg}
         onExpand={(id) => { void handleExpand(id); }}
+        onDeleteActivity={(payload) => { void onDeleteActivity(payload); }}
       />
 
       <ManageImprovementPlanModal
