@@ -382,7 +382,7 @@ export default function ManageImprovementPlansPage({ }) {
   }: {
     findingId: string | number;
     activityId: string | number;
-  }) => {
+  }): Promise<void> => {
     try {
       await deleteImprovementPlanActivity(activityId);
 
@@ -451,7 +451,7 @@ export default function ManageImprovementPlansPage({ }) {
         onUpdateSeg={handleUpdateSeg}
         onSendSeg={handleSendSeg}
         onExpand={(id) => { void handleExpand(id); }}
-        onDeleteActivity={(payload) => { void onDeleteActivity(payload); }}
+        onDeleteActivity={(payload: { findingId: string | number; activityId: string | number }) => { void onDeleteActivity(payload); }}
       />
 
       <ManageImprovementPlanModal

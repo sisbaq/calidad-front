@@ -79,6 +79,7 @@ interface FindingsTableCollapseProps {
   onSendSeg?: (payload: { findingId: RowId; activityId: RowId; segKey: string; value: string; file?: File }) => void;
   onExpand?: (findingId: RowId) => void;
   onDeleteSeg?: (payload: { findingId: RowId; activityId: RowId; segKey: string }) => void;
+  onDeleteActivity?: (payload: { findingId: RowId; activityId: RowId }) => void | Promise<void>;
 }
 
 export default function FindingsTableCollapse({
@@ -90,6 +91,7 @@ export default function FindingsTableCollapse({
   onExpand,
   onAddActivity,
   onDeleteSeg,
+  onDeleteActivity,
 }: FindingsTableCollapseProps) {
   const effectiveRows = rows.length ? rows : [];
 
@@ -305,6 +307,7 @@ export default function FindingsTableCollapse({
                               onUpdateSeg={onUpdateSeg}
                               onSendSeg={onSendSeg}
                               onDeleteSeg={onDeleteSeg}
+                              onDeleteActivity={onDeleteActivity}
                               onAddActivity={onAddActivity}
                               enableSend
                             />
