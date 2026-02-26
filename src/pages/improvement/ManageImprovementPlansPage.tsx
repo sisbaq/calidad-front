@@ -27,7 +27,7 @@ function serializeActivities(activities: ImprovementPlanActivity[]): string {
     .join('\n');
 }
 
-export default function ManageImprovementPlansPage({}) {
+export default function ManageImprovementPlansPage({ }) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<FindingWithPlan[]>([]);
   const [filters, setFilters] = useState<ImprovementPlanFilters>({
@@ -64,7 +64,7 @@ export default function ManageImprovementPlansPage({}) {
 
         return {
           id: finding.id,
-          date: finding.date,
+          date: finding.reportedOnDate,
           findingType: finding.findingType,
           auditType: finding.auditType,
           source: finding.source,
