@@ -9,6 +9,7 @@ export type FollowupIndex = 1 | 2 | 3 | 4;
 export interface ImprovementPlanActivity {
   id: string | number;
   description: string;
+  dueDate?: string;
   closed: boolean;
   followup1: string;
   followup2: string;

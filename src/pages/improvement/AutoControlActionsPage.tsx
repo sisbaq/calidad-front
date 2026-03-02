@@ -253,11 +253,7 @@ const saveLocalRecords = (records: AutoControlRecord[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 };
 
-type ManageFinding = {
-  id: number;
-  findingType: string;
-  activities: Array<{ id: number; description: string }>;
-};
+type ManageFinding = FindingWithPlan;
 
 const mapAutoActivityToImprovement = (
   activity: AutoControlActivity,
@@ -339,9 +335,20 @@ export default function AutoControlActionsPage() {
     if (!record) return;
 
     setSelectedManageFinding({
-      id: record.finding.hacId,
+      id: String(record.finding.hacId),
+      date: record.finding.hacCreado,
       findingType: getFindingTypeByFuente(record.finding.fkOrigen),
-      activities: [],
+      auditType: 'Autocontrol',
+      source: origenById.get(record.finding.fkOrigen) || '',
+      requirementNumeral: record.finding.hacNormaNumeral,
+      condition: record.plan.pmaAnalisisDeCausa,
+      description: record.finding.hacDescripcion,
+      reportedBy: record.finding.hacReportadoPor,
+      status: estadoPlanById.get(record.plan.fkEstadoPlanAuto) || 'Abierto',
+      dueDate: record.plan.pmaFechaProyectada,
+      auditedProcess: processById.get(record.finding.fkProceso) || '',
+      causeAnalysis: record.plan.pmaAnalisisDeCausa,
+      activities: record.activities.map(mapAutoActivityToImprovement),
     });
     setManageOpen(true);
   };
@@ -390,36 +397,36 @@ export default function AutoControlActionsPage() {
   const handleSaveManage = (updated: {
     id: string | number;
     analisisCausa: string;
-    actividades: string[];
+    actividades: ImprovementPlanActivity[];
     fechaInicio: string;
     fechaFin: string;
     estado?: string;
   }) => {
     const findingId = Number(updated.id);
 
-    const updatedActivities: AutoControlActivity[] = updated.actividades.map((description, index) => ({
-      ascId: Date.now() + index,
-      fkPlanMejoraAutocontrol: Date.now(),
-      ascDescripcionActividad: description,
-      ascCreadoEl: toIsoNow(),
-      ascSeguimiento1: '',
-      ascSeguimiento2: '',
-      ascSeguimiento3: '',
-      ascSeguimiento4: '',
-      ascAnexoSeguimiento1: '',
-      ascAnexoSeguimiento2: '',
-      ascAnexoSeguimiento3: '',
-      ascAnexoSeguimiento4: '',
-      ascObservSeguimiento1: '',
-      ascObservSeguimiento2: '',
-      ascObservSeguimiento3: '',
-      ascObservSeguimiento4: '',
-      ascEstado: true,
-      ascCerrado: false,
-    }));
-
     const nextRecords = records.map((record) => {
       if (record.finding.hacId !== findingId) return record;
+
+      const updatedActivities: AutoControlActivity[] = updated.actividades.map((activity, index) => ({
+        ascId: Date.now() + index,
+        fkPlanMejoraAutocontrol: record.plan.pmaId,
+        ascDescripcionActividad: activity.description,
+        ascCreadoEl: toIsoNow(),
+        ascSeguimiento1: activity.followup1 || '',
+        ascSeguimiento2: activity.followup2 || '',
+        ascSeguimiento3: activity.followup3 || '',
+        ascSeguimiento4: activity.followup4 || '',
+        ascAnexoSeguimiento1: activity.files?.[1]?.url || '',
+        ascAnexoSeguimiento2: activity.files?.[2]?.url || '',
+        ascAnexoSeguimiento3: activity.files?.[3]?.url || '',
+        ascAnexoSeguimiento4: activity.files?.[4]?.url || '',
+        ascObservSeguimiento1: activity.followup1Comment || '',
+        ascObservSeguimiento2: activity.followup2Comment || '',
+        ascObservSeguimiento3: activity.followup3Comment || '',
+        ascObservSeguimiento4: activity.followup4Comment || '',
+        ascEstado: true,
+        ascCerrado: Boolean(activity.closed),
+      }));
 
       return {
         ...record,

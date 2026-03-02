@@ -11,9 +11,9 @@ import {
   TextField,
   Button,
   IconButton,
-  Chip,
   Alert,
   DialogContentText,
+  Snackbar,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
@@ -24,15 +24,12 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
+import AddActivityModal from './AddActivityModal';
+import type { FindingWithPlan, ImprovementPlanActivity } from '@/types/improvement';
 
-type FindingWithPlan = {
-  id: string | number;
-  activities?: Array<{
-    id: string | number;
-    description?: string;
-    [k: string]: any;
-  }>;
-  [k: string]: any;
+export type Activity = {
+  description: string;
+  dueDate: string;
 };
 
 type ManageImprovementPlanModalProps = {
@@ -42,7 +39,7 @@ type ManageImprovementPlanModalProps = {
   onSave: (updated: {
     id: string | number;
     analisisCausa: string;
-    actividades: string[];
+    actividades: ImprovementPlanActivity[];
     fechaInicio: string;
     fechaFin: string;
     estado?: string;
@@ -53,6 +50,8 @@ const BLUE = '#142334';
 const GREEN = '#279B48';
 const GREEN_BG_SOFT = 'rgba(39, 155, 72, 0.08)';
 const GREEN_BORDER_SOFT = 'rgba(39, 155, 72, 0.32)';
+const MIN_PORQUES = 3;
+const MAX_PORQUES = 5;
 
 function SectionTitle({
   icon,
@@ -98,15 +97,17 @@ export default function ManageImprovementPlanModal({
   .toLowerCase()
   .includes('oportunidad');
 
-
-  const [analisis, setAnalisis] = useState('');
-  const [actividadDraft, setActividadDraft] = useState('');
-  const [actividades, setActividades] = useState<string[]>([]);
-  const [fechaInicio, setFechaInicio] = useState('');
-  const [fechaFin, setFechaFin] = useState('');
+  const [analisisPorques, setAnalisisPorques] = useState<string[]>(
+    Array.from({ length: MIN_PORQUES }, () => '')
+  );
+  const [actividades, setActividades] = useState<ImprovementPlanActivity[]>([]);
+  const [isAddingActivity, setIsAddingActivity] = useState(false);
 
   const [editIndex, setEditIndex] = useState(-1);
-  const [editValue, setEditValue] = useState('');
+  const [editValue, setEditValue] = useState<Pick<ImprovementPlanActivity, 'description' | 'dueDate'>>({
+    description: '',
+    dueDate: '',
+  });
   const [triedSave, setTriedSave] = useState(false);
 
   const [confirmDel, setConfirmDel] = useState<{ open: boolean; idx: number }>({
@@ -114,24 +115,56 @@ export default function ManageImprovementPlanModal({
     idx: -1,
   });
 
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
   useEffect(() => {
     if (!open) return;
-    setAnalisis('');
-    setActividadDraft('');
+    setAnalisisPorques(Array.from({ length: MIN_PORQUES }, () => ''));
     setActividades([]);
-    setFechaInicio('');
-    setFechaFin('');
+    setIsAddingActivity(false);
     setEditIndex(-1);
-    setEditValue('');
+    setEditValue({ description: '', dueDate: '' });
     setTriedSave(false);
     setConfirmDel({ open: false, idx: -1 });
+    setSnackbar({ open: false, message: '', severity: 'success' });
   }, [open, finding?.id]);
 
-  const addActividad = () => {
-    const v = actividadDraft.trim().replace(/\s+/g, ' ');
-    if (!v) return;
-    setActividades((prev) => [...prev, v]);
-    setActividadDraft('');
+  const handleAddActivity = (activity: Pick<ImprovementPlanActivity, 'description' | 'dueDate'>) => {
+    const newActivity: ImprovementPlanActivity = {
+      id: Date.now(), // Temporary ID for new activities
+      description: activity.description,
+      dueDate: activity.dueDate,
+      closed: false,
+      followup1: '',
+      followup2: '',
+      followup3: '',
+      followup4: '',
+      followup1Sent: false,
+      followup2Sent: false,
+      followup3Sent: false,
+      followup4Sent: false,
+      followup1Comment: '',
+      followup2Comment: '',
+      followup3Comment: '',
+      followup4Comment: '',
+      files: {
+        1: null,
+        2: null,
+        3: null,
+        4: null,
+      },
+    };
+    setActividades((prev) => [...prev, newActivity]);
+    setIsAddingActivity(false);
+    setSnackbar({
+      open: true,
+      message: 'Actividad agregada correctamente',
+      severity: 'success',
+    });
   };
 
   const requestRemoveActividad = (idx: number) =>
@@ -144,60 +177,80 @@ export default function ManageImprovementPlanModal({
     setActividades((prev) => prev.filter((_, i) => i !== confirmDel.idx));
     if (editIndex === confirmDel.idx) {
       setEditIndex(-1);
-      setEditValue('');
+      setEditValue({ description: '', dueDate: '' });
     }
     setConfirmDel({ open: false, idx: -1 });
+    setSnackbar({
+      open: true,
+      message: 'Actividad eliminada correctamente',
+      severity: 'success',
+    });
   };
 
-  const startEdit = (idx: number, value: string) => {
-    setEditIndex(idx);
-    setEditValue(value);
-  };
-
-  const cancelEdit = () => {
-    setEditIndex(-1);
-    setEditValue('');
-  };
-
-  const saveEdit = () => {
-    if (editIndex < 0) return;
-    const v = editValue.trim().replace(/\s+/g, ' ');
-    if (!v) return;
-    setActividades((prev) =>
-      prev.map((x, i) => (i === editIndex ? v : x))
+  const updatePorque = (index: number, value: string) => {
+    setAnalisisPorques((prev) =>
+      prev.map((porque, idx) => (idx === index ? value : porque))
     );
-    setEditIndex(-1);
-    setEditValue('');
   };
 
-  const analisisOk = useMemo(
-    () => (isOportunidadMejora ? true : analisis.trim().length > 0),
-    [analisis, isOportunidadMejora]
-  );
+  const addPorque = () => {
+    setAnalisisPorques((prev) => {
+      if (prev.length >= MAX_PORQUES) return prev;
+      return [...prev, ''];
+    });
+  };
+
+  const removePorque = () => {
+    setAnalisisPorques((prev) => {
+      if (prev.length <= MIN_PORQUES) return prev;
+      return prev.slice(0, -1);
+    });
+  };
+
+  const analisisOk = useMemo(() => {
+    if (isOportunidadMejora) return true;
+    const cantidadPorquesValida =
+      analisisPorques.length >= MIN_PORQUES &&
+      analisisPorques.length <= MAX_PORQUES;
+    const todosConTexto = analisisPorques.every(
+      (porque) => porque.trim().length > 0
+    );
+
+    return cantidadPorquesValida && todosConTexto;
+  }, [analisisPorques, isOportunidadMejora]);
 
   const actividadesOk = useMemo(() => actividades.length > 0, [actividades]);
 
-  const fechasOk = useMemo(() => {
-    if (!fechaInicio || !fechaFin) return false;
-    return fechaInicio <= fechaFin;
-  }, [fechaInicio, fechaFin]);
-
-  const canSubmit = analisisOk && actividadesOk && fechasOk;
+  const canSubmit = analisisOk && actividadesOk;
 
   const analisisError =
     triedSave && !analisisOk && !isOportunidadMejora;
 
   const actividadesError = triedSave && !actividadesOk;
-  const fechasError = triedSave && (!fechaInicio || !fechaFin || !fechasOk);
 
   const handleSave = () => {
     setTriedSave(true);
     if (!canSubmit) return;
 
+    const analisisCausa = analisisPorques
+      .map((porque) => porque.trim().replace(/\s+/g, ' '))
+      .map((porque, index) => `Por qué ${index + 1}: ${porque}`)
+      .join('\n');
+
+    // Get the earliest and latest activity due dates
+    const dueDates = actividades
+      .filter(a => a.dueDate)
+      .map(a => new Date(a.dueDate!).getTime())
+      .filter(d => !isNaN(d));
+    const fechaInicio = new Date().toISOString().split('T')[0]; // Today
+    const fechaFin = dueDates.length > 0 
+      ? new Date(Math.max(...dueDates)).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
+
     onSave({
       id: finding?.id || '',
-      analisisCausa: analisis.trim(),
-      actividades,
+      analisisCausa,
+      actividades: actividades,
       fechaInicio,
       fechaFin,
     });
@@ -255,20 +308,80 @@ export default function ManageImprovementPlanModal({
                   icon={<DescriptionRoundedIcon />}
                   required
                 />
-                <TextField
-                  placeholder="Describe el análisis de causa del hallazgo..."
-                  value={analisis}
-                  onChange={(e) => setAnalisis(e.target.value)}
-                  multiline
-                  minRows={4}
-                  fullWidth
-                  error={analisisError}
-                  helperText={
-                    analisisError
-                      ? 'Debes ingresar el análisis de causa.'
-                      : ' '
-                  }
-                />
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    borderColor: analisisError ? 'error.main' : 'divider',
+                  }}
+                >
+                  <Stack spacing={1.25}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Ingresa entre {MIN_PORQUES} y {MAX_PORQUES} porqués. Debes
+                      completar todos los porqués visibles.
+                    </Typography>
+
+                    {analisisPorques.map((porque, index) => {
+                      const porqueError = triedSave && porque.trim().length === 0;
+
+                      return (
+                        <TextField
+                          key={index}
+                          label={`Por qué ${index + 1}`}
+                          placeholder={`Describe el porqué ${index + 1}`}
+                          value={porque}
+                          onChange={(e) => updatePorque(index, e.target.value)}
+                          fullWidth
+                          multiline
+                          minRows={2}
+                          error={porqueError}
+                          helperText={
+                            porqueError ? 'Este porqué es obligatorio.' : ' '
+                          }
+                        />
+                      );
+                    })}
+
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={1}
+                      justifyContent="space-between"
+                      alignItems={{ xs: 'stretch', sm: 'center' }}
+                    >
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {analisisPorques.length}/{MAX_PORQUES} porqués
+                      </Typography>
+
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={removePorque}
+                          disabled={analisisPorques.length <= MIN_PORQUES}
+                        >
+                          Quitar último
+                        </Button>
+                        <Button
+                          startIcon={<AddRoundedIcon />}
+                          variant="outlined"
+                          size="small"
+                          onClick={addPorque}
+                          disabled={analisisPorques.length >= MAX_PORQUES}
+                        >
+                          Agregar porqué
+                        </Button>
+                      </Stack>
+                    </Stack>
+
+                    {analisisError && (
+                      <Typography variant="caption" sx={{ color: 'error.main' }}>
+                        Debes registrar entre {MIN_PORQUES} y {MAX_PORQUES} porqués,
+                        completando cada campo.
+                      </Typography>
+                    )}
+                  </Stack>
+                </Paper>
               </>
             )}
 
@@ -278,22 +391,19 @@ export default function ManageImprovementPlanModal({
               required
             />
 
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-              <TextField
-                placeholder="Añade una actividad…"
-                value={actividadDraft}
-                onChange={(e) => setActividadDraft(e.target.value)}
-                fullWidth
-                multiline
-                minRows={2}
-              />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
               <Button
                 startIcon={<AddRoundedIcon />}
-                onClick={addActividad}
+                onClick={() => setIsAddingActivity(true)}
                 variant="contained"
-                sx={{ bgcolor: BLUE, '&:hover': { bgcolor: '#0e1926' } }}
+                sx={{
+                  bgcolor: BLUE,
+                  '&:hover': { bgcolor: '#0e1926' },
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
               >
-                Agregar
+                Agregar Actividad
               </Button>
             </Box>
 
@@ -336,115 +446,137 @@ export default function ManageImprovementPlanModal({
                   {actividades.map((act, i) => {
                     const editing = i === editIndex;
                     return (
-                      <Box
+                      <Paper
                         key={i}
+                        variant="outlined"
                         sx={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                          gap: 1,
-                          p: 1,
+                          p: 1.5,
                           borderRadius: 1,
-                          '&:hover': { bgcolor: 'action.hover' },
+                          bgcolor: editing ? 'action.hover' : 'background.paper',
+                          borderColor: editing ? BLUE : 'divider',
                         }}
                       >
-                        <Box sx={{ flex: 1 }}>
-                          {editing ? (
-                            <TextField
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              fullWidth
-                              multiline
-                              minRows={2}
-                              autoFocus
-                            />
-                          ) : (
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                whiteSpace: 'pre-wrap',
-                                wordBreak: 'break-word',
-                                overflowWrap: 'anywhere',
-                                pr: 1,
-                              }}
-                            >
-                              {act}
-                            </Typography>
-                          )}
-                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                          <Box sx={{ flex: 1 }}>
+                            {editing ? (
+                              <Stack spacing={1}>
+                                <TextField
+                                  value={editValue.description}
+                                  onChange={(e) => setEditValue({ ...editValue, description: e.target.value })}
+                                  fullWidth
+                                  multiline
+                                  minRows={2}
+                                  autoFocus
+                                  label="Descripción"
+                                  placeholder="Describa la actividad"
+                                />
+                                <TextField
+                                  type="date"
+                                  value={editValue.dueDate}
+                                  onChange={(e) => setEditValue({ ...editValue, dueDate: e.target.value })}
+                                  fullWidth
+                                  InputLabelProps={{ shrink: true }}
+                                  label="Fecha de finalización"
+                                />
+                              </Stack>
+                            ) : (
+                              <Box>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'anywhere',
+                                    mb: 0.75,
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {act.description}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: 'text.secondary',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <TodayRoundedIcon sx={{ fontSize: 14 }} />
+                                  Vence: {act.dueDate ? new Date(act.dueDate).toLocaleDateString('es-ES') : 'Sin fecha'}
+                                </Typography>
+                              </Box>
+                            )}
+                          </Box>
 
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          {editing ? (
-                            <>
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={saveEdit}
-                              >
-                                <SaveRoundedIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton size="small" onClick={cancelEdit}>
-                                <CancelRoundedIcon fontSize="small" />
-                              </IconButton>
-                            </>
-                          ) : (
-                            <>
-                              <IconButton
-                                size="small"
-                                onClick={() => startEdit(i, act)}
-                                sx={{ color: 'text.secondary' }}
-                              >
-                                <EditRoundedIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => requestRemoveActividad(i)}
-                              >
-                                <DeleteRoundedIcon fontSize="small" />
-                              </IconButton>
-                            </>
-                          )}
+                          <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                            {editing ? (
+                              <>
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => {
+                                    const desc = editValue.description.trim().replace(/\s+/g, ' ');
+                                    const dueDate = editValue.dueDate;
+                                    if (!desc || !dueDate) return;
+                                    setActividades((prev) =>
+                                      prev.map((x, idx) => (idx === editIndex ? { ...x, description: desc, dueDate } : x))
+                                    );
+                                    setEditIndex(-1);
+                                    setEditValue({ description: '', dueDate: '' });
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'Actividad actualizada correctamente',
+                                      severity: 'success',
+                                    });
+                                  }}
+                                  disabled={!editValue.description.trim() || !editValue.dueDate}
+                                  title="Guardar cambios"
+                                >
+                                  <SaveRoundedIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    setEditIndex(-1);
+                                    setEditValue({ description: '', dueDate: '' });
+                                  }}
+                                  title="Cancelar edición"
+                                >
+                                  <CancelRoundedIcon fontSize="small" />
+                                </IconButton>
+                              </>
+                            ) : (
+                              <>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    setEditIndex(i);
+                                    setEditValue({ ...act });
+                                  }}
+                                  sx={{ color: 'text.secondary' }}
+                                  title="Editar actividad"
+                                >
+                                  <EditRoundedIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => requestRemoveActividad(i)}
+                                  title="Eliminar actividad"
+                                >
+                                  <DeleteRoundedIcon fontSize="small" />
+                                </IconButton>
+                              </>
+                            )}
+                          </Box>
                         </Box>
-                      </Box>
+                      </Paper>
                     );
                   })}
                 </Stack>
               )}
             </Paper>
-
-            <SectionTitle title="Fechas" icon={<TodayRoundedIcon />} required />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-              <TextField
-                type="date"
-                label="Inicio"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                error={fechasError && !fechaInicio}
-                helperText={
-                  fechasError && !fechaInicio ? 'Obligatoria' : ' '
-                }
-              />
-              <TextField
-                type="date"
-                label="Fin"
-                value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                error={fechasError && !fechaFin}
-                helperText={fechasError && !fechaFin ? 'Obligatoria' : ' '}
-              />
-            </Stack>
-
-            {triedSave && fechaInicio && fechaFin && !fechasOk && (
-              <Chip
-                color="error"
-                label="La fecha de inicio no puede ser mayor que la fecha fin"
-              />
-            )}
           </>
         )}
       </DialogContent>
@@ -493,6 +625,27 @@ export default function ManageImprovementPlanModal({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <AddActivityModal
+        open={isAddingActivity}
+        onClose={() => setIsAddingActivity(false)}
+        onSave={handleAddActivity}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 }

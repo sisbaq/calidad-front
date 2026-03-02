@@ -164,7 +164,7 @@ export default function ManageImprovementPlansPage({ }) {
   const saveManage = async (updated: {
     id: string | number;
     analisisCausa: string;
-    actividades: string[];
+    actividades: ImprovementPlanActivity[];
     fechaInicio: string;
     fechaFin: string;
     estado?: string;
@@ -181,7 +181,7 @@ export default function ManageImprovementPlansPage({ }) {
         plmEstadoPlan: 1,
         fkIdHallazgo: Number(rowId),
         actividades: updated.actividades.map((actividad) => ({
-          actNomActividad: actividad,
+          actNomActividad: actividad.description,
           actSeguimiento1: '',
           actSeguimiento2: '',
           actSeguimiento3: '',

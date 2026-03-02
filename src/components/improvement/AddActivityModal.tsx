@@ -6,13 +6,14 @@ import {
   DialogActions,
   Button,
   TextField,
-  Box,
+  Stack,
 } from '@mui/material';
+import type { Activity } from './ManageImprovementPlanModal';
 
 interface AddActivityModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (activityName: string) => void | Promise<void>;
+  onSave: (activity: Activity) => void | Promise<void>;
 }
 
 const BLUE = '#142334';
@@ -23,17 +24,29 @@ export default function AddActivityModal({
   onSave,
 }: AddActivityModalProps) {
   const [activityName, setActivityName] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [dateError, setDateError] = useState('');
 
   const handleSave = async () => {
     if (!activityName.trim()) {
       return;
     }
 
+    if (!dueDate) {
+      setDateError('La fecha de finalización es requerida');
+      return;
+    }
+
     setSaving(true);
     try {
-      await onSave(activityName.trim());
+      await onSave({
+        description: activityName.trim(),
+        dueDate,
+      });
       setActivityName('');
+      setDueDate('');
+      setDateError('');
       onClose();
     } catch (error) {
       console.error('Failed to save activity:', error);
@@ -45,6 +58,8 @@ export default function AddActivityModal({
   const handleClose = () => {
     if (!saving) {
       setActivityName('');
+      setDueDate('');
+      setDateError('');
       onClose();
     }
   };
@@ -63,7 +78,7 @@ export default function AddActivityModal({
       </DialogTitle>
 
       <DialogContent>
-        <Box sx={{ pt: 1 }}>
+        <Stack spacing={2} sx={{ pt: 1 }}>
           <TextField
             autoFocus
             fullWidth
@@ -75,9 +90,24 @@ export default function AddActivityModal({
             onKeyPress={handleKeyPress}
             disabled={saving}
             placeholder="Ingrese el nombre de la actividad..."
-            helperText="Presione Enter para guardar"
+            helperText="Descripción de la actividad de mejoramiento"
           />
-        </Box>
+
+          <TextField
+            fullWidth
+            type="date"
+            label="Fecha de Finalización"
+            value={dueDate}
+            onChange={(e) => {
+              setDueDate(e.target.value);
+              if (e.target.value) setDateError('');
+            }}
+            disabled={saving}
+            InputLabelProps={{ shrink: true }}
+            error={!!dateError}
+            helperText={dateError || 'Fecha en que terminará esta actividad'}
+          />
+        </Stack>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -90,7 +120,7 @@ export default function AddActivityModal({
         </Button>
         <Button
           onClick={handleSave}
-          disabled={!activityName.trim() || saving}
+          disabled={!activityName.trim() || !dueDate || saving}
           variant="contained"
           sx={{
             bgcolor: BLUE,

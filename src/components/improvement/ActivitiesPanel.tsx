@@ -142,9 +142,6 @@ export default function ActivitiesPanel({
   const [addModalOpen, setAddModalOpen] = useState(false);
   const handleOpenAddModal = () => setAddModalOpen(true);
   const handleCloseAddModal = () => setAddModalOpen(false);
-  const handleSaveActivity = async (activityName: string) => {
-    await onAddActivity(finding.id, activityName);
-  };
 
   return (
     <Box
@@ -295,7 +292,7 @@ export default function ActivitiesPanel({
       <AddActivityModal
         open={addModalOpen}
         onClose={handleCloseAddModal}
-        onSave={handleSaveActivity}
+        onSave={(activity) => onAddActivity(finding.id ?? 0, activity.description)}
       />
 
       {/* Error Snackbar for validation */}
