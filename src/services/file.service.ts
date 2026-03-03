@@ -181,22 +181,8 @@ export const downloadPlanActividadMejoramientoFile = async (
     );
     const filename = getFilenameFromResponse({ headers }, `actividad-${actId}-seguimiento-${seguimiento}.pdf`);
     downloadBlob(data, filename);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to download plan actividad mejoramiento file:', error);
-    // Preserve the backend error message if available
-    if (error?.response?.data) {
-      if (error.response.data instanceof Blob) {
-        const text = await error.response.data.text();
-        try {
-          const jsonError = JSON.parse(text);
-          throw new Error(jsonError.error || 'No se pudo descargar el archivo de seguimiento.');
-        } catch {
-          throw new Error('No se pudo descargar el archivo de seguimiento.');
-        }
-      } else if (typeof error.response.data === 'object' && error.response.data.error) {
-        throw new Error(error.response.data.error);
-      }
-    }
     throw new Error('No se pudo descargar el archivo de seguimiento.');
   }
 };
@@ -216,23 +202,8 @@ export const viewPlanActividadMejoramientoFile = async (
       { responseType: 'blob' }
     );
     viewBlob(data);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to view plan actividad mejoramiento file:', error);
-    // Preserve the backend error message if available
-    if (error?.response?.data) {
-      // For blob responses, the error might be a blob, so we need to parse it
-      if (error.response.data instanceof Blob) {
-        const text = await error.response.data.text();
-        try {
-          const jsonError = JSON.parse(text);
-          throw new Error(jsonError.error || 'No se pudo abrir el archivo de seguimiento.');
-        } catch {
-          throw new Error('No se pudo abrir el archivo de seguimiento.');
-        }
-      } else if (typeof error.response.data === 'object' && error.response.data.error) {
-        throw new Error(error.response.data.error);
-      }
-    }
     throw new Error('No se pudo abrir el archivo de seguimiento.');
   }
 };

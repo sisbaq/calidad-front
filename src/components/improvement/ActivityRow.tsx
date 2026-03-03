@@ -97,7 +97,7 @@ export default function ActivityRow({
     toNumFiles(initialFiles)
   );
   const sentNum = toBools(sentFlags);
-  const hasSent = Object.values(sentNum).some(Boolean);
+  const hasAnySent = sentNum[1] || sentNum[2] || sentNum[3] || sentNum[4];
 
   const idxToSegKey = (idx: FollowupIndex) =>
     ({
@@ -150,23 +150,25 @@ export default function ActivityRow({
               </IconButton>
             </Tooltip>
           )}
-          <Tooltip
-            title={
-              hasSent
-                ? 'No se puede eliminar: ya tiene seguimientos enviados'
-                : 'Eliminar actividad'
-            }
-          >
-            <span>
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => onDeleteActivity?.(activity, hasSent)}
-              >
-                <DeleteRoundedIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {onDeleteActivity && (
+            <Tooltip
+              title={
+                hasAnySent
+                  ? 'No se puede eliminar una actividad con seguimientos enviados'
+                  : 'Eliminar actividad'
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => onDeleteActivity(activity, hasAnySent)}
+                  disabled={hasAnySent}
+                >
+                  <DeleteRoundedIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
         </TableCell>
       </TableRow>
 

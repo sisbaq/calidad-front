@@ -87,6 +87,30 @@ export const getFindings = async (): Promise<Finding[]> => {
   }
 };
 
+/**
+ * Gets a finding by ID from backend
+ */
+export const getFindingById = async (
+  findingId: number | string
+): Promise<Finding> => {
+  try {
+    const findings = await getFindings();
+    const finding = findings.find((item) => item.id === String(findingId));
+
+    if (!finding) {
+      throw new Error('Hallazgo no encontrado');
+    }
+
+    return finding;
+  } catch (error) {
+    console.error('Failed to fetch finding by ID:', error);
+    if (error instanceof Error && error.message === 'Hallazgo no encontrado') {
+      throw error;
+    }
+    throw new Error('No se pudo obtener el hallazgo.');
+  }
+};
+
 export const getFindingsByProcess = async (): Promise<Finding[]> => {
   try {
     const { data } = await axiosInstance.get('/get/hallazgosPorProceso');

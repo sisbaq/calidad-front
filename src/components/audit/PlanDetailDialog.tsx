@@ -13,8 +13,10 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 
 import { getImprovementPlanActivitiesByPlanId, updateActivityObservation, closeImprovementPlanActivity } from '@/services/improvement.service';
+import { getFindingById } from '@/services/findings.service';
 import { viewPlanActividadMejoramientoFile } from '@/services/file.service';
 import type { ImprovementPlanActivity, ImprovementPlanWithDetails } from '@/types/improvement';
+import type { Finding } from '@/types/audit';
 import { mapPlanStatus } from '@/mappers/improvement.mapper';
 
 interface PlanDetailDialogProps {
@@ -78,6 +80,11 @@ export default function PlanDetailDialog({
     msg: '',
     sev: 'success',
   });
+
+  const [findingOpen, setFindingOpen] = React.useState(false);
+  const [findingLoading, setFindingLoading] = React.useState(false);
+  const [findingError, setFindingError] = React.useState<string | null>(null);
+  const [findingDetail, setFindingDetail] = React.useState<Finding | null>(null);
 
 
   React.useEffect(() => {
@@ -212,8 +219,38 @@ export default function PlanDetailDialog({
     }
   };
 
+  const openFindingDetail = async () => {
+    if (!plan.findingId) return;
+
+    try {
+      setFindingOpen(true);
+      setFindingLoading(true);
+      setFindingError(null);
+      const finding = await getFindingById(plan.findingId);
+      setFindingDetail(finding);
+    } catch (error) {
+      console.error('Error fetching finding detail:', error);
+      setFindingDetail(null);
+      const message = error instanceof Error ? error.message : 'No se pudo cargar el hallazgo.';
+      setFindingError(message);
+    } finally {
+      setFindingLoading(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      sx={{
+        '& .MuiDialog-paper': {
+          mr: findingOpen ? { md: '340px' } : 0,
+          transition: 'margin-right 200ms ease',
+        },
+      }}
+    >
       <DialogTitle sx={{ fontWeight: 700, color: colorPrimary }}>
         Detalle del Plan de Mejoramiento
       </DialogTitle>
@@ -229,6 +266,23 @@ export default function PlanDetailDialog({
               <Box>
                 <Typography variant="caption" color="text.secondary">Estado</Typography>
                 <Typography variant="body2">{mapPlanStatus(plan.status)}</Typography>
+              </Box>
+              <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'flex-end' }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={openFindingDetail}
+                  sx={{
+                    color: '#fff',
+                    backgroundColor: colorSuccess,
+                    fontWeight: 700,
+                    '&:hover': {
+                      backgroundColor: colorSuccess,
+                    },
+                  }}
+                >
+                  VER HALLAZGO
+                </Button>
               </Box>
             </Stack>
           </SectionCard>
@@ -342,7 +396,7 @@ export default function PlanDetailDialog({
                                             try {
                                               await viewPlanActividadMejoramientoFile(activity.id, seg.num as 1 | 2 | 3 | 4);
                                             } catch (error) {
-                                              console.error('Error viewing file:', error);
+                                              console.error('Failed to view file:', error);
                                               const errorMsg = error instanceof Error ? error.message : 'No se pudo abrir el archivo';
                                               setSnackbar({ 
                                                 open: true, 
@@ -445,6 +499,116 @@ export default function PlanDetailDialog({
       <DialogActions>
         <Button onClick={onClose} sx={{ color: colorPrimary }}>Cerrar</Button>
       </DialogActions>
+
+      <Dialog
+        open={findingOpen}
+        onClose={() => setFindingOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        hideBackdrop
+        disableEnforceFocus
+        disableAutoFocus
+        sx={{
+          '& .MuiDialog-container': {
+            justifyContent: 'flex-end',
+            alignItems: 'stretch',
+            pointerEvents: 'none',
+          },
+          '& .MuiDialog-paper': {
+            m: 0,
+            width: { xs: '100%', sm: 520 },
+            maxWidth: '100%',
+            height: '100%',
+            borderRadius: 0,
+            backgroundColor: colorPrimary,
+            pointerEvents: 'auto',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: '#fff', backgroundColor: colorPrimary }}>
+          Detalle del hallazgo
+        </DialogTitle>
+        <DialogContent dividers sx={{ backgroundColor: colorPrimary }}>
+          {findingLoading ? (
+            <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
+              <CircularProgress size={32} sx={{ color: '#fff' }} />
+              <Typography variant="body2" sx={{ mt: 2, color: '#fff' }}>
+                Cargando hallazgo...
+              </Typography>
+            </Stack>
+          ) : findingError ? (
+            <Alert severity="error">{findingError}</Alert>
+          ) : findingDetail ? (
+            <Stack spacing={1.5}>
+              <SectionCard>
+                <Stack spacing={1}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">ID hallazgo</Typography>
+                    <Typography variant="body2">{findingDetail.id}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Proceso auditado</Typography>
+                    <Typography variant="body2">{findingDetail.auditedProcess || 'N/A'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Informe de auditoría</Typography>
+                    <Typography variant="body2">{findingDetail.auditReportDescription || 'N/A'}</Typography>
+                  </Box>
+                  <Stack direction="row" spacing={2}>
+                    <Box flex={1}>
+                      <Typography variant="caption" color="text.secondary">Tipo auditoría</Typography>
+                      <Typography variant="body2">{findingDetail.auditType || 'N/A'}</Typography>
+                    </Box>
+                    <Box flex={1}>
+                      <Typography variant="caption" color="text.secondary">Tipo hallazgo</Typography>
+                      <Typography variant="body2">{findingDetail.findingType || 'N/A'}</Typography>
+                    </Box>
+                  </Stack>
+                  <Stack direction="row" spacing={2}>
+                    <Box flex={1}>
+                      <Typography variant="caption" color="text.secondary">Fuente</Typography>
+                      <Typography variant="body2">{findingDetail.source || 'N/A'}</Typography>
+                    </Box>
+                    <Box flex={1}>
+                      <Typography variant="caption" color="text.secondary">Fecha reporte</Typography>
+                      <Typography variant="body2">{findingDetail.reportedOnDate || 'N/A'}</Typography>
+                    </Box>
+                  </Stack>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Numeral</Typography>
+                    <Typography variant="body2">{findingDetail.requirementNumeral || 'N/A'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Condición</Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                      {findingDetail.condition || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Descripción del hecho</Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                      {findingDetail.description || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Reportado por</Typography>
+                    <Typography variant="body2">{findingDetail.reportedBy || 'N/A'}</Typography>
+                  </Box>
+                </Stack>
+              </SectionCard>
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No hay información de hallazgo disponible.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ backgroundColor: colorPrimary }}>
+          <Button onClick={() => setFindingOpen(false)} sx={{ color: '#fff' }}>
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={obsOpen} onClose={() => setObsOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ color: colorPrimary, fontWeight: 700 }}>
