@@ -23,6 +23,10 @@ export interface ImprovementPlanActivity {
   followup2Comment?: string;
   followup3Comment?: string;
   followup4Comment?: string;
+  followup1Date?: string;
+  followup2Date?: string;
+  followup3Date?: string;
+  followup4Date?: string;
   files?: {
     1: FileAttachment | null;
     2: FileAttachment | null;
@@ -140,6 +144,10 @@ export interface ApiImprovementPlanActivity {
   actObservSeguimiento2: string | null;
   actObservSeguimiento3: string | null;
   actObservSeguimiento4: string | null;
+  actFechaSeguimiento1: string | null;
+  actFechaSeguimiento2: string | null;
+  actFechaSeguimiento3: string | null;
+  actFechaSeguimiento4: string | null;
   fkCreadoPor: ApiUser;
   fkActualizadoPor: ApiUser | null;
   fkPlanMejoramiento: {

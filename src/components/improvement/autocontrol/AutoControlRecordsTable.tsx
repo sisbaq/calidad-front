@@ -16,6 +16,7 @@ import SettingsSuggestOutlinedIcon from '@mui/icons-material/SettingsSuggestOutl
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import type { AutoControlRecord } from '@/types/autocontrol';
 import { appColors } from '@/theme/colors';
+import { parseDateString } from '@/utils/dateUtils';
 
 interface AutoControlRecordsTableProps {
   records: AutoControlRecord[];
@@ -84,7 +85,7 @@ export default function AutoControlRecordsTable({
                   <>
                     <TableCell>
                       {record.finding.hacCreado
-                        ? new Date(record.finding.hacCreado).toLocaleDateString('es-CO')
+                        ? parseDateString(record.finding.hacCreado).toLocaleDateString('es-CO')
                         : '-'}
                     </TableCell>
                     <TableCell>

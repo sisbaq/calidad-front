@@ -17,6 +17,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import { appColors } from "@/theme/colors";
 import type { SigDocument } from "@/types/document";
 import { viewDocumentacionFile, downloadDocumentacionFile } from "@/services/file.service";
+import { parseDateString } from "@/utils/dateUtils";
 
 export interface TransversalDocsTableProps {
   rows: SigDocument[];
@@ -24,7 +25,9 @@ export interface TransversalDocsTableProps {
 
 function formatOnlyDate(value: string | Date | undefined | null): string {
   if (!value) return "";
-  const d = typeof value === "string" ? new Date(value) : value;
+  const d = typeof value === "string" 
+    ? (value.match(/^\d{4}-\d{2}-\d{2}$/) ? parseDateString(value) : new Date(value))
+    : value;
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString();
 }

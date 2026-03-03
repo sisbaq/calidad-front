@@ -16,6 +16,7 @@ import {
 import type { Dispatch, SetStateAction } from 'react';
 import type { AutoControlOption, AutoControlRecord } from '@/types/autocontrol';
 import { appColors } from '@/theme/colors';
+import { isoToLocalDateString, localDateStringToIso } from '@/utils/dateUtils';
 
 interface AutoControlRecordDialogProps {
   open: boolean;
@@ -36,7 +37,7 @@ export default function AutoControlRecordDialog({
   onSave,
   onSetDraft,
 }: AutoControlRecordDialogProps) {
-  const fechaValue = draft.finding.hacCreado ? draft.finding.hacCreado.slice(0, 10) : '';
+  const fechaValue = isoToLocalDateString(draft.finding.hacCreado);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -85,7 +86,7 @@ export default function AutoControlRecordDialog({
                 onChange={(e) =>
                   onSetDraft((prev) => ({
                     ...prev,
-                    finding: { ...prev.finding, hacCreado: e.target.value },
+                    finding: { ...prev.finding, hacCreado: localDateStringToIso(e.target.value) },
                   }))
                 }
                 slotProps={{ inputLabel: { shrink: true } }}

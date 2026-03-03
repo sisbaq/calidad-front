@@ -26,6 +26,7 @@ import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
 import AddActivityModal from './AddActivityModal';
 import type { FindingWithPlan, ImprovementPlanActivity } from '@/types/improvement';
+import { parseDateString } from '@/utils/dateUtils';
 
 export type Activity = {
   description: string;
@@ -242,7 +243,7 @@ export default function ManageImprovementPlanModal({
       .filter(a => a.dueDate)
       .map(a => new Date(a.dueDate!).getTime())
       .filter(d => !isNaN(d));
-    const fechaInicio = new Date().toISOString().split('T')[0]; // Today
+    const fechaInicio = new Date().toISOString().split('T')[0]; // Today in YYYY-MM-DD format
     const fechaFin = dueDates.length > 0 
       ? new Date(Math.max(...dueDates)).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0];
@@ -503,7 +504,7 @@ export default function ManageImprovementPlanModal({
                                   }}
                                 >
                                   <TodayRoundedIcon sx={{ fontSize: 14 }} />
-                                  Vence: {act.dueDate ? new Date(act.dueDate).toLocaleDateString('es-ES') : 'Sin fecha'}
+                                  Vence: {act.dueDate ? parseDateString(act.dueDate).toLocaleDateString('es-ES') : 'Sin fecha'}
                                 </Typography>
                               </Box>
                             )}
@@ -552,7 +553,10 @@ export default function ManageImprovementPlanModal({
                                   size="small"
                                   onClick={() => {
                                     setEditIndex(i);
-                                    setEditValue({ ...act });
+                                    setEditValue({
+                                      description: act.description,
+                                      dueDate: act.dueDate || '',
+                                    });
                                   }}
                                   sx={{ color: 'text.secondary' }}
                                   title="Editar actividad"

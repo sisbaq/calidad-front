@@ -70,6 +70,10 @@ export const mapApiActivityToFrontend = (
     followup2Comment: apiActivity.actObservSeguimiento2 || undefined,
     followup3Comment: apiActivity.actObservSeguimiento3 || undefined,
     followup4Comment: apiActivity.actObservSeguimiento4 || undefined,
+    followup1Date: apiActivity.actFechaSeguimiento1 || undefined,
+    followup2Date: apiActivity.actFechaSeguimiento2 || undefined,
+    followup3Date: apiActivity.actFechaSeguimiento3 || undefined,
+    followup4Date: apiActivity.actFechaSeguimiento4 || undefined,
     planId,
     files: {
       1: apiActivity.actAnexoSeguimiento1 ? { url: apiActivity.actAnexoSeguimiento1, name: 'Seguimiento 1' } : null,

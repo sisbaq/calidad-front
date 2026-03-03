@@ -6,6 +6,7 @@ import {
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import type { AuditPlan } from "@/types/audit";
 import { downloadPlanAuditoriaFile, downloadInformeAuditoriaFile } from "@/services/file.service";
+import { parseDateString } from "@/utils/dateUtils";
 
 const AZUL = "#0e2336";
 
@@ -33,7 +34,12 @@ export interface AuditFilesTableProps {
 
 function formatDate(iso: string): string {
     try {
-        return new Date(iso).toLocaleDateString("es-CO", {
+        // Verificar si es formato YYYY-MM-DD o ISO string
+        const date = iso.match(/^\d{4}-\d{2}-\d{2}$/)
+            ? parseDateString(iso)
+            : new Date(iso);
+        
+        return date.toLocaleDateString("es-CO", {
             year: "numeric",
             month: "2-digit",
             day: "2-digit",

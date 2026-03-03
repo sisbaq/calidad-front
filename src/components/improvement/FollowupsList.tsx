@@ -27,6 +27,13 @@ const H2A: Record<FollowupIndex, keyof ImprovementPlanActivity> = {
   4: 'followup4',
 } as const;
 
+const H2D: Record<FollowupIndex, keyof ImprovementPlanActivity> = {
+  1: 'followup1Date',
+  2: 'followup2Date',
+  3: 'followup3Date',
+  4: 'followup4Date',
+} as const;
+
 
 interface FollowupsListProps {
   findingId: string | number;
@@ -199,6 +206,7 @@ export default function FollowupsList({
             const value = draftSeg?.[i] ?? baseValue;
             const sent = !!sentFlags?.[i];
             const fileObj = files?.[i] || null;
+            const followupDate = (activity[H2D[i]] as unknown as string) ?? undefined;
             const show = ((value?.length ?? 0) > 0 || !!fileObj) || i <= visibleCount;
             if (!show) return null;
             const onChangeSafe = (v: string) => {
@@ -239,6 +247,7 @@ export default function FollowupsList({
                 showStatus={!hideStatusInFollowup}
                 fileObj={fileObj}
                 isClosed={isClosed}
+                followupDate={followupDate}
                 onChange={onChangeSafe}
                 onPickFile={onPickFileSafe}
                 onClearFile={onClearFileSafe}

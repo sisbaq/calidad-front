@@ -10,9 +10,11 @@ import {
   Typography,
 } from '@mui/material';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import TodayRoundedIcon from '@mui/icons-material/TodayRounded';
 import FileAttachment from '@components/common/FileAttachment';
 import ConfirmDialog from '@components/common/ConfirmDialog';
 import type { FileAttachment as FileAttachmentType } from '@/types/improvement';
+import { parseDateString } from '@/utils/dateUtils';
 
 interface FollowupItemProps {
   activityId: string | number;
@@ -23,6 +25,7 @@ interface FollowupItemProps {
   showStatus?: boolean;
   fileObj: FileAttachmentType | File | null;
   isClosed?: boolean;
+  followupDate?: string;
   onChange: (value: string) => void;
   onPickFile: (file: File) => void;
   onClearFile: () => void;
@@ -44,6 +47,7 @@ export default function FollowupItem({
   showStatus = true,
   fileObj,
   isClosed = false,
+  followupDate,
   onChange,
   onPickFile,
   onClearFile,
@@ -70,9 +74,25 @@ export default function FollowupItem({
       <TableRow hover>
         {/* Descripción */}
         <TableCell sx={{ minWidth: 360 }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
-            {label}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {label}
+            </Typography>
+            {followupDate && (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
+              >
+                <TodayRoundedIcon sx={{ fontSize: 14 }} />
+                Gestionado: {parseDateString(followupDate).toLocaleDateString('es-ES')}
+              </Typography>
+            )}
+          </Stack>
           <TextField
             inputProps={{ 'data-act': `${activityId}-${label}` }}
             fullWidth
