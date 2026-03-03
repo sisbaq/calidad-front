@@ -151,6 +151,47 @@ export const closeImprovementPlan = async (
 };
 
 /**
+ * Approves an improvement plan by setting status to CERRADO (2)
+ */
+export const approveImprovementPlan = async (
+  planId: number | string
+): Promise<ImprovementPlan> => {
+  try {
+    const payload: { plmEstadoPlan: number; observacionCierre?: string } = {
+      plmEstadoPlan: 2,
+      observacionCierre: 'Plan aprobado',
+    };
+
+    const { data } = await axiosInstance.put(`/editar/planMejoramiento/${planId}`, payload);
+    return mapApiImprovementPlanToFrontend(data);
+  } catch (error) {
+    console.error('Failed to approve improvement plan:', error);
+    throw new Error('No se pudo aprobar el plan de mejoramiento.');
+  }
+};
+
+/**
+ * Rejects an improvement plan keeping it open (1) and saving rejection observation
+ */
+export const rejectImprovementPlan = async (
+  planId: number | string,
+  observation: string
+): Promise<ImprovementPlan> => {
+  try {
+    const payload: { plmEstadoPlan: number; observacionCierre?: string } = {
+      plmEstadoPlan: 1,
+      observacionCierre: observation,
+    };
+
+    const { data } = await axiosInstance.put(`/editar/planMejoramiento/${planId}`, payload);
+    return mapApiImprovementPlanToFrontend(data);
+  } catch (error) {
+    console.error('Failed to reject improvement plan:', error);
+    throw new Error('No se pudo rechazar el plan de mejoramiento.');
+  }
+};
+
+/**
  * Creates multiple improvement plan activities
  */
 export const createImprovementPlanActivities = async (

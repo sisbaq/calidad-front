@@ -12,9 +12,10 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 
-import { getImprovementPlanActivitiesByPlanId, updateActivityObservation, closeImprovementPlanActivity } from '@/services/improvement.service';
+import { getImprovementPlanActivitiesByPlanId, updateActivityObservation, closeImprovementPlanActivity, approveImprovementPlan, rejectImprovementPlan } from '@/services/improvement.service';
 import { getFindingById } from '@/services/findings.service';
 import { viewPlanActividadMejoramientoFile } from '@/services/file.service';
+import ApprovePlanActions from './ApprovePlanActions';
 import type { ImprovementPlanActivity, ImprovementPlanWithDetails } from '@/types/improvement';
 import type { Finding } from '@/types/audit';
 import { mapPlanStatus } from '@/mappers/improvement.mapper';
@@ -240,6 +241,18 @@ export default function PlanDetailDialog({
     }
   };
 
+  const handleApprovePlan = async (planId: string | number) => {
+    setSnackbar({ open: true, msg: 'Procesando aprobación del plan...', sev: 'info' });
+    await approveImprovementPlan(planId);
+    setSnackbar({ open: true, msg: 'Plan de mejoramiento aprobado correctamente.', sev: 'success' });
+  };
+
+  const handleRejectPlan = async (planId: string | number, observation: string) => {
+    setSnackbar({ open: true, msg: 'Procesando rechazo del plan...', sev: 'info' });
+    await rejectImprovementPlan(planId, observation);
+    setSnackbar({ open: true, msg: 'Plan de mejoramiento rechazado.', sev: 'info' });
+  };
+
   return (
     <Dialog
       open={open}
@@ -260,7 +273,7 @@ export default function PlanDetailDialog({
       <DialogContent dividers sx={{ pt: 2 }}>
         <Box>
           <SectionCard>
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} sx={{ mb: 1.5 }}>
               <Box flex={1}>
                 <Typography variant="caption" color="text.secondary">Proceso</Typography>
                 <Typography variant="body2">{plan.processName || 'N/A'}</Typography>
@@ -498,8 +511,16 @@ export default function PlanDetailDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} sx={{ color: colorPrimary }}>Cerrar</Button>
+      <DialogActions sx={{ justifyContent: 'space-between', px: 3 }}>
+        <ApprovePlanActions
+          planId={plan.id}
+          planStatus={plan.status}
+          onApprove={handleApprovePlan}
+          onReject={handleRejectPlan}
+          colorPrimary={colorPrimary}
+          colorSuccess={colorSuccess}
+        />
+        <Button onClick={onClose} sx={{ color: colorPrimary, fontWeight: 700 }}>CERRAR</Button>
       </DialogActions>
 
       <Dialog
@@ -513,24 +534,61 @@ export default function PlanDetailDialog({
         sx={{
           '& .MuiDialog-container': {
             justifyContent: 'flex-end',
-            alignItems: 'stretch',
+            alignItems: 'flex-start',
+            p: { xs: 1, sm: 1.5 },
             pointerEvents: 'none',
           },
           '& .MuiDialog-paper': {
             m: 0,
             width: { xs: '100%', sm: 520 },
             maxWidth: '100%',
-            height: '100%',
-            borderRadius: 0,
+            height: { xs: 'calc(100% - 16px)', sm: 'calc(100% - 24px)' },
+            maxHeight: '100%',
+            borderRadius: 2,
             backgroundColor: colorPrimary,
+            boxShadow: 24,
+            border: '1px solid rgba(255,255,255,0.14)',
+            overflow: 'hidden',
             pointerEvents: 'auto',
           },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, color: '#fff', backgroundColor: colorPrimary }}>
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            color: '#fff',
+            backgroundColor: colorPrimary,
+            textAlign: 'center',
+            py: 2,
+          }}
+        >
           Detalle del hallazgo
         </DialogTitle>
-        <DialogContent dividers sx={{ backgroundColor: colorPrimary }}>
+        <DialogContent
+          dividers
+          sx={{
+            backgroundColor: colorPrimary,
+            px: 2,
+            py: 1.5,
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(255,255,255,0.35) rgba(255,255,255,0.12)',
+            '&::-webkit-scrollbar': {
+              width: 8,
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'rgba(255,255,255,0.12)',
+              borderRadius: 8,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(255,255,255,0.35)',
+              borderRadius: 8,
+              border: '2px solid rgba(20,35,52,0.8)',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: 'rgba(255,255,255,0.5)',
+            },
+          }}
+        >
           {findingLoading ? (
             <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
               <CircularProgress size={32} sx={{ color: '#fff' }} />
@@ -605,7 +663,7 @@ export default function PlanDetailDialog({
             </Typography>
           )}
         </DialogContent>
-        <DialogActions sx={{ backgroundColor: colorPrimary }}>
+        <DialogActions sx={{ backgroundColor: colorPrimary, px: 2, pb: 1.5, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
           <Button onClick={() => setFindingOpen(false)} sx={{ color: '#fff' }}>
             Cerrar
           </Button>
