@@ -154,12 +154,14 @@ export default function PlanDetailDialog({
 
 
   const hasActivityFollowup = (activity: ImprovementPlanActivity): boolean => {
-    return Boolean(
-      activity.followup1 ||
-      activity.followup2 ||
-      activity.followup3 ||
-      activity.followup4
-    );
+    const followups = [
+      activity.followup1,
+      activity.followup2,
+      activity.followup3,
+      activity.followup4,
+    ];
+
+    return followups.some((item) => typeof item === 'string' && item.trim().length > 0);
   };
 
   const requestCloseActivity = (activity: ImprovementPlanActivity) => {
@@ -246,8 +248,8 @@ export default function PlanDetailDialog({
       fullWidth
       sx={{
         '& .MuiDialog-paper': {
-          mr: findingOpen ? { md: '340px' } : 0,
-          transition: 'margin-right 200ms ease',
+          mr: findingOpen ? { md: '260px' } : 0,
+          transition: 'margin-right 200ms          ease',
         },
       }}
     >
@@ -328,7 +330,7 @@ export default function PlanDetailDialog({
                               activity.closed
                                 ? 'La actividad ya esta cerrada'
                                 : !hasActivityFollowup(activity)
-                                  ? 'No se puede cerrar una actividad sin seguimiento'
+                                  ? 'No se puede cerrar una actividad si no tiene un seguimiento diligenciado'
                                   : 'Cerrar esta actividad'
                             }
                           >
