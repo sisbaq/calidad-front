@@ -13,6 +13,7 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
 import FollowupsList from './FollowupsList';
 import type { ImprovementPlanActivity, FileAttachment, FollowupIndex } from '@/types/improvement';
+import { parseDateString } from '@/utils/dateUtils';
 
 interface FollowupComments {
   1?: string;
@@ -142,6 +143,14 @@ export default function ActivityRow({
           </Typography>
         </TableCell>
 
+        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+          <Typography variant="body2" color="text.secondary">
+            {activity.dueDate
+              ? parseDateString(activity.dueDate).toLocaleDateString('es-ES')
+              : 'Sin fecha'}
+          </Typography>
+        </TableCell>
+
         <TableCell align="right" sx={{ width: 160 }}>
           {!hideObservations && (
             <Tooltip title="Ver observaciones">
@@ -173,7 +182,7 @@ export default function ActivityRow({
       </TableRow>
 
       <TableRow>
-        <TableCell colSpan={3} sx={{ p: 0, border: 0 }}>
+        <TableCell colSpan={4} sx={{ p: 0, border: 0 }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2, bgcolor: 'rgba(20,35,52,0.03)' }}>
               <FollowupsList

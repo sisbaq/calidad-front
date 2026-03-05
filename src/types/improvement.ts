@@ -33,6 +33,9 @@ export interface ImprovementPlanActivity {
     3: FileAttachment | null;
     4: FileAttachment | null;
   };
+  // Auditor reviews/observations
+  auditorObservation?: string;
+  auditorCauseAnalysisObservation?: string;
 }
 
 export interface FileAttachment {
@@ -54,6 +57,12 @@ export interface ImprovementPlan {
   createdAt?: string;
   updatedAt?: string;
   activities?: ImprovementPlanActivity[];
+  // Approval workflow fields
+  submissionStatus?: 'draft' | 'submitted' | 'approved' | 'rejected';
+  auditorObservation?: string;
+  auditorName?: string;
+  submittedAt?: string;
+  rejectedAt?: string;
 }
 
 // Extended plan with additional display fields for tables
@@ -128,6 +137,7 @@ export interface ApiImprovementPlan {
 export interface ApiImprovementPlanActivity {
   actId: number;
   actNomActividad: string;
+  actFechaFinal: string | null;
   actCreadoEl: string;
   actActualizadoEl: string | null;
   actEstado: boolean;
@@ -178,6 +188,7 @@ export interface CreateImprovementPlanPayload {
 // Type for nested activity creation (without fkPlanMejoramiento)
 export interface NestedActivityPayload {
   actNomActividad: string;
+  actFechaFinal: string;
   actSeguimiento1: string;
   actSeguimiento2: string;
   actSeguimiento3: string;
@@ -190,6 +201,7 @@ export interface NestedActivityPayload {
 
 export interface CreateActivityPayload {
   actNomActividad: string;
+  actFechaFinal: string;
   actSeguimiento1: string;
   actSeguimiento2: string;
   actSeguimiento3: string;
@@ -203,6 +215,7 @@ export interface CreateActivityPayload {
 
 export interface UpdateActivityPayload {
   actNomActividad?: string;
+  actFechaFinal?: string;
   actCerrada?: boolean;
   actSeguimiento1?: string;
   actSeguimiento2?: string;

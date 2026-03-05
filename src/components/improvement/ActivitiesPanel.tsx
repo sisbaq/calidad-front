@@ -47,7 +47,7 @@ interface ActivitiesPanelProps {
     activityId: string | number;
   }) => void | Promise<void>;
   /** (opcional) callback para el botón Añadir actividad */
-  onAddActivity?: (findingId: string | number, activity: string) => void;
+  onAddActivity?: (findingId: string | number, activity: { description: string; dueDate: string }) => void;
   hideObservations?: boolean;
   hideFollowupStatus?: boolean;
   /** Solo para auditoria: habilita boton Enviar seguimiento */
@@ -194,6 +194,7 @@ export default function ActivitiesPanel({
               <TableRow>
                 <TableCell sx={{ width: 48 }} />
                 <TableCell sx={{ fontWeight: 700 }}>Nombre de la Actividad</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 180 }}>Fecha vencimiento</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, width: 160 }}>
                   Acciones
                 </TableCell>
@@ -203,7 +204,7 @@ export default function ActivitiesPanel({
             <TableBody>
               {paginated.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} align="center">
+                  <TableCell colSpan={4} align="center">
                     <Typography variant="body2" color="text.secondary">
                       No hay actividades para mostrar
                     </Typography>
@@ -292,7 +293,7 @@ export default function ActivitiesPanel({
       <AddActivityModal
         open={addModalOpen}
         onClose={handleCloseAddModal}
-        onSave={(activity) => onAddActivity(finding.id ?? 0, activity.description)}
+        onSave={(activity) => onAddActivity(finding.id ?? 0, activity)}
       />
 
       {/* Error Snackbar for validation */}

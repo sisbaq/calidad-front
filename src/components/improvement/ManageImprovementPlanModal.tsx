@@ -93,6 +93,8 @@ export default function ManageImprovementPlanModal({
   onSave = () => {},
 }: ManageImprovementPlanModalProps) {
   const hasExistingPlan = Boolean(finding?.improvementPlan);
+  const isRejectedPlan = finding?.improvementPlan?.submissionStatus === 'rejected';
+  const isEditablePlan = hasExistingPlan && isRejectedPlan;
 
  const isOportunidadMejora = String(finding?.findingType ?? '')
   .toLowerCase()
@@ -124,15 +126,28 @@ export default function ManageImprovementPlanModal({
 
   useEffect(() => {
     if (!open) return;
-    setAnalisisPorques(Array.from({ length: MIN_PORQUES }, () => ''));
-    setActividades([]);
+    
+    // If it's a rejected plan to be resubmitted
+    if (isEditablePlan && finding?.improvementPlan) {
+      const plan = finding.improvementPlan;
+      // Parse existing cause analysis
+      const porques = plan.causeAnalysis
+        ? plan.causeAnalysis.split('\n').map(p => p.replace(/Por qué \d+:\s*/, '').trim())
+        : Array(MIN_PORQUES).fill('');
+      setAnalisisPorques(porques.length ? porques : Array(MIN_PORQUES).fill(''));
+      setActividades(plan.activities || []);
+    } else {
+      setAnalisisPorques(Array.from({ length: MIN_PORQUES }, () => ''));
+      setActividades([]);
+    }
+    
     setIsAddingActivity(false);
     setEditIndex(-1);
     setEditValue({ description: '', dueDate: '' });
     setTriedSave(false);
     setConfirmDel({ open: false, idx: -1 });
     setSnackbar({ open: false, message: '', severity: 'success' });
-  }, [open, finding?.id]);
+  }, [open, finding?.id, isEditablePlan, finding?.improvementPlan]);
 
   const handleAddActivity = (activity: Pick<ImprovementPlanActivity, 'description' | 'dueDate'>) => {
     const newActivity: ImprovementPlanActivity = {
@@ -273,7 +288,7 @@ export default function ManageImprovementPlanModal({
         <DialogTitle
           sx={{ m: 0, p: 0, fontWeight: 800, fontSize: 20, color: BLUE }}
         >
-          Gestionar Hallazgo
+          Gestionar Plan de Mejoramiento
         </DialogTitle>
         <IconButton onClick={onClose} size="small" sx={{ mr: 1 }}>
           <CloseRoundedIcon />
@@ -281,7 +296,7 @@ export default function ManageImprovementPlanModal({
       </Box>
 
       <DialogContent sx={{ bgcolor: 'background.default', p: { xs: 2, md: 3 } }}>
-        {hasExistingPlan ? (
+        {hasExistingPlan && !isEditablePlan ? (
           <Alert
             icon={false}
             sx={{
@@ -302,6 +317,25 @@ export default function ManageImprovementPlanModal({
           </Alert>
         ) : (
           <>
+            {isEditablePlan && (
+              <Alert
+                severity="warning"
+                sx={{
+                  borderRadius: 2,
+                  mb: 2,
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Tu plan fue rechazado por el auditor
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1.5 }}>
+                  {finding?.improvementPlan?.auditorObservation}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                  Por favor realiza los cambios necesarios y reenvía para nueva revisión.
+                </Typography>
+              </Alert>
+            )}
             {!isOportunidadMejora && (
               <>
                 <SectionTitle
@@ -590,7 +624,7 @@ export default function ManageImprovementPlanModal({
           Cancelar
         </Button>
 
-        {hasExistingPlan ? (
+        {hasExistingPlan && !isEditablePlan ? (
           <Button
             variant="contained"
             onClick={onClose}
@@ -605,7 +639,7 @@ export default function ManageImprovementPlanModal({
             disabled={!canSubmit}
             sx={{ fontWeight: 700, bgcolor: BLUE }}
           >
-            Guardar gestión
+            Enviar para aprobación
           </Button>
         )}
       </DialogActions>

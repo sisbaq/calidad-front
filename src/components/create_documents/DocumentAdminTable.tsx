@@ -189,9 +189,9 @@ export default function DocumentTable({
   };
 
   return (
-    <Card elevation={3} sx={{ mt: 4, borderRadius: 3, width: "100%", maxWidth: "100%" }}>
+    <Card elevation={3} sx={{ mt: 4, borderRadius: 3, width: "100%", maxWidth: "100%"}}>
       <CardContent>
-        <Typography variant="h6" gutterBottom>Documentos</Typography>
+        <Typography variant="h6" gutterBottom>Ver documentos</Typography>
         <Paper
           square
           elevation={0}

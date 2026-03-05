@@ -41,6 +41,12 @@ export const mapApiImprovementPlanToFrontend = (
     createdAt: apiPlan.plmCreadoEn,
     updatedAt: apiPlan.plmActualizadoEl || undefined,
     activities,
+    // Approval workflow fields (when backend provides them)
+    submissionStatus: (apiPlan as any).submissionStatus || 'draft',
+    auditorObservation: (apiPlan as any).auditorObservation || apiPlan.observacionCierre || undefined,
+    auditorName: (apiPlan as any).auditorName || undefined,
+    submittedAt: (apiPlan as any).submittedAt || undefined,
+    rejectedAt: (apiPlan as any).rejectedAt || undefined,
   };
 };
 
@@ -57,6 +63,7 @@ export const mapApiActivityToFrontend = (
   return {
     id: apiActivity.actId,
     description: apiActivity.actNomActividad,
+    dueDate: apiActivity.actFechaFinal || undefined,
     closed: apiActivity.actCerrada || false,
     followup1: apiActivity.actSeguimiento1 || '',
     followup2: apiActivity.actSeguimiento2 || '',

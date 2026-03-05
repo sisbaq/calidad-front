@@ -141,7 +141,7 @@ const ALL_ROUTES: NavItem[] = [
     ],
   },
   {
-    title: "Crear documentación",
+    title: "Crear/Ver documentación",
     icon: <CreateIcon />,
     segment: "crear-documento",
     rolesAllowed: [ROLES.GESTOR],

@@ -315,3 +315,71 @@ export const uploadActivityFollowupFile = async (
     throw new Error('No se pudo subir el archivo de seguimiento.');
   }
 };
+
+/**
+ * Submits an improvement plan for auditor approval
+ */
+export const submitImprovementPlanForApproval = async (
+  planId: number | string
+): Promise<ImprovementPlan> => {
+  try {
+    const payload = {
+      submissionStatus: 'submitted',
+      submittedAt: new Date().toISOString(),
+    };
+
+    const { data } = await axiosInstance.put(
+      `/editar/planMejoramiento/${planId}`,
+      payload
+    );
+    return mapApiImprovementPlanToFrontend(data);
+  } catch (error) {
+    console.error('Failed to submit improvement plan for approval:', error);
+    throw new Error('No se pudo enviar el plan para aprobación.');
+  }
+};
+
+/**
+ * Updates a rejected improvement plan and resubmits it for approval
+ */
+export const updateAndResubmitRejectedPlan = async (
+  planId: number | string,
+  payload: Partial<CreateImprovementPlanPayload>
+): Promise<ImprovementPlan> => {
+  try {
+    const updatePayload = {
+      ...payload,
+      submissionStatus: 'submitted',
+      submittedAt: new Date().toISOString(),
+    };
+
+    const { data } = await axiosInstance.put(
+      `/editar/planMejoramiento/${planId}`,
+      updatePayload
+    );
+    return mapApiImprovementPlanToFrontend(data);
+  } catch (error) {
+    console.error('Failed to update and resubmit rejected plan:', error);
+    throw new Error('No se pudo actualizar y reenviar el plan.');
+  }
+};
+
+/**
+ * Gets rejection/observations for a plan
+ */
+export const getPlanRejectionDetails = async (
+  planId: number | string
+): Promise<{ observation?: string; auditorName?: string; rejectedAt?: string }> => {
+  try {
+    const { data } = await axiosInstance.get(`/get/planMejoramiento/${planId}`);
+    return {
+      observation: data.observacionCierre || data.auditorObservation,
+      auditorName: data.auditorName,
+      rejectedAt: data.rejectedAt,
+    };
+  } catch (error) {
+    console.error('Failed to fetch plan rejection details:', error);
+    throw new Error('No se pudieron obtener los detalles del rechazo.');
+  }
+};
+

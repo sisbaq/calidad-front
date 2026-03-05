@@ -12,6 +12,8 @@ import {
   uploadActivityFollowupFile,
   getImprovementPlanActivitiesByFindingId,
   deleteImprovementPlanActivity,
+  submitImprovementPlanForApproval,
+  updateAndResubmitRejectedPlan,
 } from '@services/improvement.service';
 import type {
   FindingWithPlan,
@@ -27,7 +29,7 @@ function serializeActivities(activities: ImprovementPlanActivity[]): string {
     .join('\n');
 }
 
-export default function ManageImprovementPlansPage({ }) {
+export default function ManageImprovementPlansPage() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<FindingWithPlan[]>([]);
   const [filters, setFilters] = useState<ImprovementPlanFilters>({
@@ -173,30 +175,53 @@ export default function ManageImprovementPlansPage({ }) {
       const rowId = updated.id ?? selected?.id;
       if (!rowId) return;
 
-      // Single request with nested activities
-      const planPayload = {
-        plmAnalisisDeCausa: updated.analisisCausa,
-        plmFechaInicio: updated.fechaInicio,
-        plmFechaFinal: updated.fechaFin,
-        plmEstadoPlan: 1,
-        fkIdHallazgo: Number(rowId),
-        actividades: updated.actividades.map((actividad) => ({
-          actNomActividad: actividad.description,
-          actSeguimiento1: '',
-          actSeguimiento2: '',
-          actSeguimiento3: '',
-          actSeguimiento4: '',
-          actAnexoSeguimiento1: '',
-          actAnexoSeguimiento2: '',
-          actAnexoSeguimiento3: '',
-          actAnexoSeguimiento4: '',
-        })),
-      };
+      const isRejectedPlan = selected?.improvementPlan?.submissionStatus === 'rejected';
+      
+      let submittedPlan: ImprovementPlan;
 
-      const createdPlan = await createImprovementPlan(planPayload);
+      if (isRejectedPlan && selected?.improvementPlan?.id) {
+        // Update and resubmit rejected plan
+        const updatePayload = {
+          plmAnalisisDeCausa: updated.analisisCausa,
+          plmFechaInicio: updated.fechaInicio,
+          plmFechaFinal: updated.fechaFin,
+          plmEstadoPlan: 1,
+          fkIdHallazgo: Number(rowId),
+        };
 
-      // Activities are already included in createdPlan.activities
-      const createdActivities = createdPlan.activities || [];
+        submittedPlan = await updateAndResubmitRejectedPlan(
+          selected.improvementPlan.id,
+          updatePayload
+        );
+      } else {
+        // Create new plan
+        const planPayload = {
+          plmAnalisisDeCausa: updated.analisisCausa,
+          plmFechaInicio: updated.fechaInicio,
+          plmFechaFinal: updated.fechaFin,
+          plmEstadoPlan: 1,
+          fkIdHallazgo: Number(rowId),
+          actividades: updated.actividades.map((actividad) => ({
+            actNomActividad: actividad.description,
+            actFechaFinal: actividad.dueDate || updated.fechaFin,
+            actSeguimiento1: '',
+            actSeguimiento2: '',
+            actSeguimiento3: '',
+            actSeguimiento4: '',
+            actAnexoSeguimiento1: '',
+            actAnexoSeguimiento2: '',
+            actAnexoSeguimiento3: '',
+            actAnexoSeguimiento4: '',
+          })),
+        };
+
+        const createdPlan = await createImprovementPlan(planPayload);
+
+        // Submit plan for approval
+        submittedPlan = await submitImprovementPlanForApproval(createdPlan.id);
+      }
+
+      const createdActivities = submittedPlan.activities || [];
 
       setRows((prev) =>
         prev.map((r) => {
@@ -212,7 +237,7 @@ export default function ManageImprovementPlansPage({ }) {
             activities: nextActivities,
             improvementActivities,
             status: updated.estado || r.status || 'Abierto',
-            improvementPlan: createdPlan,
+            improvementPlan: submittedPlan,
           };
         })
       );
@@ -332,7 +357,10 @@ export default function ManageImprovementPlansPage({ }) {
     }
   };
 
-  const onAddActivity = async (findingId: string | number, activity: string) => {
+  const onAddActivity = async (
+    findingId: string | number,
+    activity: { description: string; dueDate: string }
+  ) => {
     try {
       const plan = improvementPlans.find((p) => String(p.findingId) === String(findingId));
       if (!plan) {
@@ -341,7 +369,8 @@ export default function ManageImprovementPlansPage({ }) {
 
       const createdActivities = await createImprovementPlanActivities([
         {
-          actNomActividad: activity,
+          actNomActividad: activity.description,
+          actFechaFinal: activity.dueDate || plan.endDate,
           actSeguimiento1: '',
           actSeguimiento2: '',
           actSeguimiento3: '',

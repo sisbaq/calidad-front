@@ -20,10 +20,14 @@ import {
   DialogActions,
   Button,
   Divider,
+  Alert,
 } from '@mui/material';
 import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
 import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import HourglassEmptyRoundedIcon from '@mui/icons-material/HourglassEmptyRounded';
 import ActivitiesPanel from './ActivitiesPanel';
 import type { FindingWithPlan } from '@/types/improvement';
 
@@ -35,9 +39,34 @@ const ESTADO_COLORS: Record<string, { bg: string; fg: string }> = {
   Vencido: { bg: '#C62828', fg: '#ffffff' },
 };
 
+const SUBMISSION_STATUS_CONFIG: Record<string, { color: string; label: string; icon: any }> = {
+  draft: { color: '#FDA946', label: 'Pendiente', icon: HourglassEmptyRoundedIcon },
+  submitted: { color: '#142334', label: 'Enviado', icon: HourglassEmptyRoundedIcon },
+  approved: { color: '#279B48', label: 'Aprobado', icon: CheckCircleRoundedIcon },
+  rejected: { color: '#C62828', label: 'Rechazado', icon: WarningAmberRoundedIcon },
+};
+
 function EstadoChip({ estado = 'Abierto' }: { estado: string }) {
   const { bg, fg } = ESTADO_COLORS[estado] || ESTADO_COLORS.Abierto;
   return <Chip size="small" label={estado} sx={{ bgcolor: bg, color: fg, fontWeight: 600, borderRadius: 1 }} />;
+}
+
+function ApprovalStatusChip({ status = 'draft' }: { status?: string }) {
+  const config = SUBMISSION_STATUS_CONFIG[status] || SUBMISSION_STATUS_CONFIG.draft;
+  const Icon = config.icon;
+  return (
+    <Chip
+      size="small"
+      label={config.label}
+      icon={<Icon />}
+      sx={{
+        bgcolor: config.color,
+        color: '#ffffff',
+        fontWeight: 600,
+        borderRadius: 1,
+      }}
+    />
+  );
 }
 const fmtDate = (d?: string): string => {
   if (!d) return '—';
@@ -74,7 +103,7 @@ interface FindingsTableCollapseProps {
   rows: FindingWithPlan[];
   pageSize?: number;
   onManage?: (finding: FindingWithPlan) => void;
-  onAddActivity?: (findingId: RowId, activity: string) => void;
+  onAddActivity?: (findingId: RowId, activity: { description: string; dueDate: string }) => void;
   onUpdateSeg?: (payload: { findingId: RowId; activityId: RowId; segKey: string; value: string }) => void;
   onSendSeg?: (payload: { findingId: RowId; activityId: RowId; segKey: string; value: string; file?: File }) => void;
   onExpand?: (findingId: RowId) => void;
@@ -109,6 +138,13 @@ export default function FindingsTableCollapse({
 
   const [notManaged, setNotManaged] = useState<{ open: boolean; finding?: FindingWithPlan }>({ open: false });
 
+  const [rejectionDetails, setRejectionDetails] = useState<{
+    open: boolean;
+    finding?: FindingWithPlan;
+    observation?: string;
+    auditorName?: string;
+  }>({ open: false });
+
   const openDetail = (title: string, content: string) => setDetail({ open: true, title, content });
   const closeDetail = () => setDetail({ open: false, title: '', content: '' });
 
@@ -141,7 +177,7 @@ export default function FindingsTableCollapse({
     return effectiveRows.slice(start, start + rowsPerPage);
   }, [effectiveRows, page, rowsPerPage]);
 
-  const HEADER_COLS = 8;
+  const HEADER_COLS = 9;
 
   return (
     <Box sx={{ width: '100%', borderRadius: 3, boxShadow: '0 6px 18px rgba(0,0,0,0.06)' }}>
@@ -158,6 +194,7 @@ export default function FindingsTableCollapse({
               <TableCell sx={{ fontWeight: 700 }}>Tipo hallazgo</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Estado</TableCell>
               <TableCell sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>Fecha de vencimiento</TableCell>
+              <TableCell sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>Aprobación</TableCell>
               <TableCell sx={{ fontWeight: 700 }} align="center">Gestionar</TableCell>
               <TableCell sx={{ fontWeight: 700 }} align="center">Ver</TableCell>
               <TableCell sx={{ fontWeight: 700 }} align="center">Detalles</TableCell>
@@ -187,6 +224,26 @@ export default function FindingsTableCollapse({
                       <TableCell>{r.findingType || '—'}</TableCell>
                       <TableCell><EstadoChip estado={r.status || 'Abierto'} /></TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}> {fmtDate(r.improvementPlan?.startDate)}</TableCell>
+
+                      <TableCell>
+                        <ApprovalStatusChip status={r.improvementPlan?.submissionStatus} />
+                        {r.improvementPlan?.submissionStatus === 'rejected' && (
+                          <Tooltip title="Ver observaciones del auditor">
+                            <IconButton
+                              size="small"
+                              onClick={() => setRejectionDetails({
+                                open: true,
+                                finding: row,
+                                observation: r.improvementPlan?.auditorObservation,
+                                auditorName: r.improvementPlan?.auditorName,
+                              })}
+                              sx={{ ml: 1, color: '#C62828' }}
+                            >
+                              <WarningAmberRoundedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
 
                       <TableCell align="center">
                         <Tooltip title={isManaged ? 'Plan ya gestionado' : 'Gestionar'}>
@@ -376,6 +433,66 @@ export default function FindingsTableCollapse({
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+      <Dialog open={rejectionDetails.open} onClose={() => setRejectionDetails({ open: false })} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarningAmberRoundedIcon sx={{ color: '#C62828' }} />
+          Plan de Mejoramiento Rechazado
+        </DialogTitle>
+        <DialogContent dividers>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+              El auditor ha rechazado tu plan de mejoramiento.
+            </Typography>
+            <Typography variant="body2">
+              Por favor revisa las observaciones a continuación y realiza los cambios necesarios.
+            </Typography>
+          </Alert>
+
+          {rejectionDetails.auditorName && (
+            <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+              <strong>Auditor: {rejectionDetails.auditorName}</strong>
+            </Typography>
+          )}
+
+          <Box sx={{ bgcolor: 'rgba(198,40,40,0.08)', p: 2, borderRadius: 1, border: '1px solid rgba(198,40,40,0.2)' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#C62828' }}>
+              Observaciones del auditor:
+            </Typography>
+            <Typography
+              variant="body2"
+              component="div"
+              sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6 }}
+            >
+              {rejectionDetails.observation || 'Sin observaciones'}
+            </Typography>
+          </Box>
+
+          <Typography variant="body2" sx={{ mt: 3, mb: 1, fontWeight: 700 }}>
+            Acciones recomendadas:
+          </Typography>
+          <Typography variant="body2" component="ul" sx={{ ml: 2 }}>
+            <li>Lee cuidadosamente las observaciones del auditor</li>
+            <li>Realiza los ajustes necesarios a tu análisis de causa o actividades</li>
+            <li>Reenvia el plan para nueva revisión haciendo clic en "Gestionar"</li>
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRejectionDetails({ open: false })}>
+            Cerrar
+          </Button>
+          <Button
+            variant="contained"
+            sx={{ bgcolor: BLUE, '&:hover': { bgcolor: '#0e1926' } }}
+            onClick={() => {
+              if (rejectionDetails.finding) {
+                onManage?.(rejectionDetails.finding);
+              }
+              setRejectionDetails({ open: false });
+            }}
+          >
+            Ir a Gestionar
+          </Button>
+        </DialogActions>
+      </Dialog>    </Box>
   );
 }
